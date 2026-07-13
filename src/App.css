@@ -182,3 +182,113 @@
     border-right-color: var(--border);
   }
 }
+
+/* Touch feedback for existing icon buttons that relied on hover */
+.del-btn:active,
+.add-btn:active {
+  color: var(--red);
+  background: var(--red-dim);
+}
+
+/* Auth screen toggle link needs a real tap target */
+.auth-toggle-link {
+  color: var(--cyan);
+  cursor: pointer;
+  font-weight: bold;
+  padding: 6px 4px;
+  display: inline-block;
+  min-height: 32px;
+}
+.auth-toggle-link:active {
+  opacity: 0.6;
+}
+
+/* Simple spinner for the auth submit button's loading state */
+.spin {
+  display: inline-block;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.icon-btn-touch {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 1.1rem;
+  min-width: 40px;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: color 0.15s, background 0.15s;
+}
+.icon-btn-touch:active {
+  color: var(--red);
+  background: var(--red-dim);
+}
+.icon-btn-touch:disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* Quick-add rep chips */
+.quick-add-row {
+  display: flex;
+  gap: 8px;
+  margin: 10px 0 8px;
+}
+.quick-add-chip {
+  flex: 1;
+  min-height: 40px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+  color: var(--cyan);
+  font-weight: 700;
+  font-size: 0.85rem;
+  transition: transform 0.1s, background 0.15s;
+}
+.quick-add-chip:active {
+  transform: scale(0.95);
+  background: var(--cyan-dim);
+}
+
+/* Larger, full-height minus/plus buttons flanking the custom input */
+.ex-input-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  margin-top: 4px;
+}
+.ex-input-row input {
+  flex: 1;
+  min-width: 0;
+  font-size: 16px;
+  text-align: center;
+}
+.ex-btn {
+  min-width: 48px;
+  min-height: 48px;
+  border-radius: 12px;
+  border: none;
+  font-size: 1.3rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s, background 0.15s;
+}
+.ex-btn.minus {
+  background: var(--red-dim);
+  color: var(--red);
+}
+.ex-btn.plus {
+  background: var(--cyan-dim);
+  color: var(--cyan);
+}
+.ex-btn:active {
+  transform: scale(0.92);
+}

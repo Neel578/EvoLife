@@ -1,5 +1,41 @@
 import React, { useState, useEffect } from 'react';
 
+function ConfirmModal({ title = 'Are you sure?', message, confirmLabel = 'Delete', onConfirm, onCancel }) {
+  return (
+    <div className="modal-overlay" onClick={onCancel}>
+      <div className="modal-box" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>{title}</h2>
+          <button className="modal-close" onClick={onCancel}><i className="ri-close-line"></i></button>
+        </div>
+        {message && <p style={{ color: 'var(--muted)', marginBottom: '20px', fontSize: '0.9rem' }}>{message}</p>}
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button className="btn-ghost" style={{ flex: 1 }} onClick={onCancel}>Cancel</button>
+          <button className="btn-primary btn-red" style={{ flex: 1 }} onClick={onConfirm}>{confirmLabel}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AlertModal({ message, onClose }) {
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-box" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>Heads up</h2>
+          <button className="modal-close" onClick={onClose}><i className="ri-close-line"></i></button>
+        </div>
+        <p style={{ color: 'var(--muted)', marginBottom: '20px', fontSize: '0.9rem' }}>{message}</p>
+        <button className="btn-primary" style={{ width: '100%' }} onClick={onClose}>Got it</button>
+      </div>
+    </div>
+  );
+}
+
+// Quick-tap rep amounts — covers most logging without needing the keyboard at all
+const QUICK_ADDS = [5, 10, 25];
+
 function WorkoutApp({ setCurrentScreen }) {
   const [plan, setPlan] = useState(() => {
     const s = localStorage.getItem('evoLifeWorkout_v2');
@@ -11,6 +47,8 @@ function WorkoutApp({ setCurrentScreen }) {
   const [planType, setPlanType] = useState('');
   const [builder, setBuilder] = useState([]);
   const [repInputs, setRepInputs] = useState({});
+  const [confirmModal, setConfirmModal] = useState(null);
+  const [alertMsg, setAlertMsg] = useState(null);
 
   useEffect(() => {
     if (plan) localStorage.setItem('evoLifeWorkout_v2', JSON.stringify(plan));
@@ -35,14 +73,15 @@ function WorkoutApp({ setCurrentScreen }) {
     } else {
       data = builder.filter(i => i.name && i.goal).map(i => ({ name: i.name, goal: parseInt(i.goal), current: 0 }));
     }
-    if (!data.length) return alert("Add at least one exercise.");
+    if (!data.length) return setAlertMsg("Add at least one exercise.");
     setPlan({ type: planType, data });
     setShowCreator(false);
   };
 
-  const log = (sIdx, exIdx, mult) => {
+  // amt param lets both the typed input AND the quick-add chips use the same logger
+  const log = (sIdx, exIdx, mult, amtOverride) => {
     const key = `${sIdx}-${exIdx}`;
-    const amt = parseInt(repInputs[key]) || 0;
+    const amt = amtOverride ?? (parseInt(repInputs[key]) || 0);
     if (!amt) return;
     const np = { ...plan };
     if (sIdx !== null) {
@@ -51,7 +90,7 @@ function WorkoutApp({ setCurrentScreen }) {
       np.data[exIdx].current = Math.max(0, np.data[exIdx].current + amt * mult);
     }
     setPlan(np);
-    setRepInputs({ ...repInputs, [key]: '' });
+    if (amtOverride === undefined) setRepInputs({ ...repInputs, [key]: '' });
   };
 
   // calc totals
@@ -74,15 +113,24 @@ function WorkoutApp({ setCurrentScreen }) {
           <span className="ex-count">{ex.current} / {ex.goal}</span>
         </div>
         <div className="progress-track"><div className="progress-fill" style={{ width: `${p}%`, background: p >= 100 ? 'var(--green)' : 'linear-gradient(90deg, var(--cyan), var(--green))' }}></div></div>
+
+        {/* Quick-add chips — one tap logs reps, no keyboard needed */}
+        <div className="quick-add-row">
+          {QUICK_ADDS.map(n => (
+            <button key={n} className="quick-add-chip" onClick={() => log(sIdx, exIdx, 1, n)}>+{n}</button>
+          ))}
+        </div>
+
+        {/* Manual entry for custom amounts */}
         <div className="ex-input-row">
+          <button className="ex-btn minus" onClick={() => log(sIdx, exIdx, -1)} aria-label="Subtract">−</button>
           <input
-            type="number" placeholder="Count"
+            type="number" inputMode="numeric" placeholder="Custom"
             value={repInputs[key] || ''}
             onChange={e => setRepInputs({ ...repInputs, [key]: e.target.value })}
             min="1"
           />
-          <button className="ex-btn minus" onClick={() => log(sIdx, exIdx, -1)}>−</button>
-          <button className="ex-btn plus" onClick={() => log(sIdx, exIdx, 1)}>+</button>
+          <button className="ex-btn plus" onClick={() => log(sIdx, exIdx, 1)} aria-label="Add">+</button>
         </div>
       </div>
     );
@@ -96,19 +144,44 @@ function WorkoutApp({ setCurrentScreen }) {
       setPlan(np);
     };
     const delEx = () => {
-      if (!window.confirm("Remove this exercise?")) return;
-      const np = { ...plan };
-      if (sIdx !== null) np.data[sIdx].exercises.splice(exIdx, 1);
-      else np.data.splice(exIdx, 1);
-      setPlan(np);
+      setConfirmModal({
+        message: 'Remove this exercise from your plan?',
+        onConfirm: () => {
+          const np = { ...plan };
+          if (sIdx !== null) np.data[sIdx].exercises.splice(exIdx, 1);
+          else np.data.splice(exIdx, 1);
+          setPlan(np);
+          setConfirmModal(null);
+        }
+      });
     };
     return (
       <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
-        <input type="text" value={ex.name} onChange={e => updateEx('name', e.target.value)} style={{ flex: 2, padding: '8px 10px', fontSize: '0.85rem', borderRadius: 'var(--radius-sm)' }} placeholder="Exercise name" />
-        <input type="number" value={ex.goal} onChange={e => updateEx('goal', e.target.value)} style={{ flex: 1, padding: '8px 10px', fontSize: '0.85rem', borderRadius: 'var(--radius-sm)', minWidth: 0 }} placeholder="Goal" />
-        <button onClick={delEx} style={{ background: 'var(--red-dim)', color: 'var(--red)', border: 'none', borderRadius: '8px', padding: '8px 10px', flexShrink: 0 }}><i className="ri-close-line"></i></button>
+        <input type="text" value={ex.name} onChange={e => updateEx('name', e.target.value)} style={{ flex: 2, padding: '10px', fontSize: '16px', borderRadius: 'var(--radius-sm)' }} placeholder="Exercise name" />
+        <input type="number" inputMode="numeric" value={ex.goal} onChange={e => updateEx('goal', e.target.value)} style={{ flex: 1, padding: '10px', fontSize: '16px', borderRadius: 'var(--radius-sm)', minWidth: 0 }} placeholder="Goal" />
+        <button className="icon-btn-touch" onClick={delEx} style={{ flexShrink: 0, background: 'var(--red-dim)', color: 'var(--red)' }}><i className="ri-close-line"></i></button>
       </div>
     );
+  };
+
+  const deleteSection = (sIdx) => {
+    setConfirmModal({
+      message: 'Delete this entire section and its exercises?',
+      onConfirm: () => {
+        const np = { ...plan };
+        np.data.splice(sIdx, 1);
+        setPlan(np);
+        setConfirmModal(null);
+      }
+    });
+  };
+
+  const resetPlan = () => {
+    setConfirmModal({
+      message: 'This will permanently delete your entire workout plan and progress.',
+      confirmLabel: 'Reset Everything',
+      onConfirm: () => { setPlan(null); setConfirmModal(null); }
+    });
   };
 
   return (
@@ -134,7 +207,7 @@ function WorkoutApp({ setCurrentScreen }) {
             <div style={{ fontSize: '3rem', marginBottom: '12px' }}>💪</div>
             <h2 className="heading" style={{ marginBottom: '8px' }}>Create Your Plan</h2>
             <p style={{ color: 'var(--muted)', marginBottom: '24px', fontSize: '0.9rem' }}>Build a monthly rep goal to track your progress.</p>
-            <button className="btn-primary btn-red" onClick={() => { setShowCreator(true); setStep(1); }}>
+            <button className="btn-primary btn-red" style={{ minHeight: 48 }} onClick={() => { setShowCreator(true); setStep(1); }}>
               <i className="ri-add-line"></i> Add Workout Plan
             </button>
           </div>
@@ -154,10 +227,10 @@ function WorkoutApp({ setCurrentScreen }) {
             </div>
 
             <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
-              <button className={isEditing ? 'btn-primary' : 'btn-ghost'} style={{ flex: 1 }} onClick={() => setIsEditing(v => !v)}>
+              <button className={isEditing ? 'btn-primary' : 'btn-ghost'} style={{ flex: 1, minHeight: 48 }} onClick={() => setIsEditing(v => !v)}>
                 <i className={isEditing ? 'ri-save-line' : 'ri-edit-line'}></i> {isEditing ? 'Save' : 'Edit Plan'}
               </button>
-              <button className="btn-ghost" style={{ flex: 1, borderColor: 'var(--red)', color: 'var(--red)' }} onClick={() => window.confirm("Reset all workout data?") && setPlan(null)}>
+              <button className="btn-ghost" style={{ flex: 1, borderColor: 'var(--red)', color: 'var(--red)', minHeight: 48 }} onClick={resetPlan}>
                 <i className="ri-delete-bin-line"></i> Reset
               </button>
             </div>
@@ -170,9 +243,8 @@ function WorkoutApp({ setCurrentScreen }) {
                     <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', alignItems: 'center' }}>
                       <input type="text" value={sec.sectionName}
                         onChange={e => { const np = {...plan}; np.data[sIdx].sectionName = e.target.value; setPlan(np); }}
-                        style={{ flex: 1, fontWeight: 700, fontSize: '0.9rem' }} />
-                      <button onClick={() => { if (window.confirm("Delete section?")) { const np = {...plan}; np.data.splice(sIdx, 1); setPlan(np); } }}
-                        style={{ background: 'var(--red-dim)', color: 'var(--red)', border: 'none', borderRadius: '8px', padding: '8px 10px' }}>
+                        style={{ flex: 1, fontWeight: 700, fontSize: '16px' }} />
+                      <button className="icon-btn-touch" onClick={() => deleteSection(sIdx)} style={{ background: 'var(--red-dim)', color: 'var(--red)' }}>
                         <i className="ri-delete-bin-line"></i>
                       </button>
                     </div>
@@ -186,7 +258,7 @@ function WorkoutApp({ setCurrentScreen }) {
                   )}
                   {isEditing && (
                     <button onClick={() => { const np = {...plan}; np.data[sIdx].exercises.push({ name: 'New Exercise', goal: 100, current: 0 }); setPlan(np); }}
-                      style={{ width: '100%', padding: '10px', border: '1px dashed var(--muted-2)', background: 'none', color: 'var(--green)', borderRadius: 'var(--radius-sm)', fontSize: '0.85rem', marginTop: '8px' }}>
+                      style={{ width: '100%', padding: '12px', border: '1px dashed var(--muted-2)', background: 'none', color: 'var(--green)', borderRadius: 'var(--radius-sm)', fontSize: '0.85rem', marginTop: '8px', minHeight: 44 }}>
                       + Add Exercise
                     </button>
                   )}
@@ -201,14 +273,14 @@ function WorkoutApp({ setCurrentScreen }) {
                 )}
                 {isEditing && (
                   <button onClick={() => { const np = {...plan}; np.data.push({ name: 'New Exercise', goal: 100, current: 0 }); setPlan(np); }}
-                    style={{ width: '100%', padding: '10px', border: '1px dashed var(--muted-2)', background: 'none', color: 'var(--green)', borderRadius: 'var(--radius-sm)', fontSize: '0.85rem', marginTop: '8px' }}>
+                    style={{ width: '100%', padding: '12px', border: '1px dashed var(--muted-2)', background: 'none', color: 'var(--green)', borderRadius: 'var(--radius-sm)', fontSize: '0.85rem', marginTop: '8px', minHeight: 44 }}>
                     + Add Exercise
                   </button>
                 )}
               </div>
             )}
             {isEditing && plan.type === 'section' && (
-              <button className="btn-ghost" style={{ marginTop: '8px' }}
+              <button className="btn-ghost" style={{ marginTop: '8px', minHeight: 48 }}
                 onClick={() => { const np = {...plan}; np.data.push({ sectionName: 'New Section', exercises: [{ name: 'Exercise', goal: 100, current: 0 }] }); setPlan(np); }}>
                 + Add Body Part Section
               </button>
@@ -228,11 +300,11 @@ function WorkoutApp({ setCurrentScreen }) {
               {step === 1 && (
                 <div>
                   <p style={{ color: 'var(--muted)', marginBottom: '16px', fontSize: '0.9rem' }}>How to organize your exercises?</p>
-                  <button className="option-card" onClick={() => choosePlanType('section')}>
+                  <button className="option-card" style={{ minHeight: 64 }} onClick={() => choosePlanType('section')}>
                     <h3>Body Part Sections</h3>
                     <p>Group by Chest, Legs, Abs, etc.</p>
                   </button>
-                  <button className="option-card" onClick={() => choosePlanType('list')}>
+                  <button className="option-card" style={{ minHeight: 64 }} onClick={() => choosePlanType('list')}>
                     <h3>Simple List</h3>
                     <p>All exercises together.</p>
                   </button>
@@ -247,19 +319,19 @@ function WorkoutApp({ setCurrentScreen }) {
                         <div key={sIdx} className="card" style={{ padding: '14px', marginBottom: '12px' }}>
                           <input type="text" placeholder="Section name (e.g. Chest)" value={sec.sectionName}
                             onChange={e => { const b = [...builder]; b[sIdx].sectionName = e.target.value; setBuilder(b); }}
-                            style={{ fontWeight: 700, marginBottom: '10px' }} />
+                            style={{ fontWeight: 700, marginBottom: '10px', fontSize: '16px' }} />
                           {sec.exercises.map((ex, exIdx) => (
                             <div key={exIdx} style={{ display: 'flex', gap: '8px', marginBottom: '6px' }}>
                               <input type="text" placeholder="Exercise" value={ex.name}
                                 onChange={e => { const b = [...builder]; b[sIdx].exercises[exIdx].name = e.target.value; setBuilder(b); }}
-                                style={{ flex: 2, padding: '8px 10px', fontSize: '0.85rem' }} />
-                              <input type="number" placeholder="Goal" value={ex.goal}
+                                style={{ flex: 2, padding: '10px', fontSize: '16px' }} />
+                              <input type="number" inputMode="numeric" placeholder="Goal" value={ex.goal}
                                 onChange={e => { const b = [...builder]; b[sIdx].exercises[exIdx].goal = e.target.value; setBuilder(b); }}
-                                style={{ flex: 1, padding: '8px 10px', fontSize: '0.85rem', minWidth: 0 }} />
+                                style={{ flex: 1, padding: '10px', fontSize: '16px', minWidth: 0 }} />
                             </div>
                           ))}
                           <button onClick={() => { const b = [...builder]; b[sIdx].exercises.push({ name: '', goal: '' }); setBuilder(b); }}
-                            style={{ fontSize: '0.8rem', color: 'var(--green)', background: 'none', border: 'none', marginTop: '6px' }}>+ Exercise</button>
+                            style={{ fontSize: '0.8rem', color: 'var(--green)', background: 'none', border: 'none', marginTop: '6px', minHeight: 36 }}>+ Exercise</button>
                         </div>
                       ))
                     ) : (
@@ -267,19 +339,19 @@ function WorkoutApp({ setCurrentScreen }) {
                         <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
                           <input type="text" placeholder="Exercise name" value={item.name}
                             onChange={e => { const b = [...builder]; b[i].name = e.target.value; setBuilder(b); }}
-                            style={{ flex: 2 }} />
-                          <input type="number" placeholder="Monthly goal" value={item.goal}
+                            style={{ flex: 2, fontSize: '16px' }} />
+                          <input type="number" inputMode="numeric" placeholder="Monthly goal" value={item.goal}
                             onChange={e => { const b = [...builder]; b[i].goal = e.target.value; setBuilder(b); }}
-                            style={{ flex: 1, minWidth: 0 }} />
+                            style={{ flex: 1, minWidth: 0, fontSize: '16px' }} />
                         </div>
                       ))
                     )}
                   </div>
                   <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
-                    <button className="btn-ghost" onClick={() => setBuilder(prev => planType === 'section'
+                    <button className="btn-ghost" style={{ minHeight: 44 }} onClick={() => setBuilder(prev => planType === 'section'
                       ? [...prev, { sectionName: '', exercises: [{ name: '', goal: '' }] }]
                       : [...prev, { name: '', goal: '' }])}>+ Add More</button>
-                    <button className="btn-primary btn-red" onClick={savePlan}><i className="ri-save-line"></i> Save Plan</button>
+                    <button className="btn-primary btn-red" style={{ minHeight: 44 }} onClick={savePlan}><i className="ri-save-line"></i> Save Plan</button>
                   </div>
                 </div>
               )}
@@ -287,6 +359,16 @@ function WorkoutApp({ setCurrentScreen }) {
           </div>
         )}
       </div>
+
+      {confirmModal && (
+        <ConfirmModal
+          message={confirmModal.message}
+          confirmLabel={confirmModal.confirmLabel}
+          onConfirm={confirmModal.onConfirm}
+          onCancel={() => setConfirmModal(null)}
+        />
+      )}
+      {alertMsg && <AlertModal message={alertMsg} onClose={() => setAlertMsg(null)} />}
     </div>
   );
 }

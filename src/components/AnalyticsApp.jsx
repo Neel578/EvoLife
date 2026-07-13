@@ -98,14 +98,24 @@ function AnalyticsApp({ setCurrentScreen }) {
           </div>
         </div>
 
-        <div className="tab-row">
+        <div className="tab-row" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
           {tabs1.map(([val, lbl]) => (
-            <button key={val} className={`tab-pill ${activeTab === val ? 'active' : ''}`} onClick={() => setActiveTab(val)}>{lbl}</button>
+            <button
+              key={val}
+              className={`tab-pill ${activeTab === val ? 'active' : ''}`}
+              style={{ minHeight: '40px', flexShrink: 0 }}
+              onClick={() => setActiveTab(val)}
+            >{lbl}</button>
           ))}
         </div>
         <div className="tab-row" style={{ marginBottom: '20px' }}>
           {tabs2.map(([val, lbl]) => (
-            <button key={val} className={`tab-pill ${activeTab === val ? 'active' : ''}`} onClick={() => setActiveTab(val)}>{lbl}</button>
+            <button
+              key={val}
+              className={`tab-pill ${activeTab === val ? 'active' : ''}`}
+              style={{ minHeight: '40px', flexShrink: 0 }}
+              onClick={() => setActiveTab(val)}
+            >{lbl}</button>
           ))}
         </div>
 
@@ -125,7 +135,7 @@ function AnalyticsApp({ setCurrentScreen }) {
               <div className="label">Best Day</div>
             </div>
           </div>
-          <div style={{ height: 'clamp(200px, 40vw, 320px)' }}>
+          <div style={{ height: 'clamp(200px, 40vw, 320px)', position: 'relative', minHeight: '200px' }}>
             {labels.length > 0
               ? <Line data={chartData} options={chartOpts} />
               : <div className="empty-state"><i className="ri-line-chart-line"></i><p>No data yet. Start completing tasks!</p></div>

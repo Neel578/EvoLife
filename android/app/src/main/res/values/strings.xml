@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">EvoLife</string>
+    <string name="title_activity_main">EvoLife</string>
+    <string name="package_name">com.neel.evolife</string>
+    <string name="custom_url_scheme">com.neel.evolife</string>
+</resources>

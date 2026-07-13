@@ -118,8 +118,9 @@ function DailyFocus({ setCurrentScreen }) {
                 value={newTask}
                 onChange={e => setNewTask(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && addTask()}
+                style={{ fontSize: '16px' }}
               />
-              <button className="add-btn" onClick={addTask}>
+              <button className="add-btn icon-btn-touch" onClick={addTask} disabled={!newTask.trim() || tasks.length >= 10}>
                 <i className="ri-add-line"></i>
               </button>
             </div>
@@ -135,15 +136,15 @@ function DailyFocus({ setCurrentScreen }) {
                 <div
                   key={task.id}
                   className={`task-item ${task.completed ? 'done' : ''}`}
-                  style={{ animationDelay: `${i * 40}ms` }}
+                  style={{ animationDelay: `${i * 40}ms`, minHeight: '52px' }}
                 >
-                  <div className="task-left" onClick={() => toggleTask(task.id)}>
+                  <div className="task-left" onClick={() => toggleTask(task.id)} style={{ minHeight: '44px' }}>
                     <div className="check-ring">
                       {task.completed && <i className="ri-check-line"></i>}
                     </div>
                     <span className="task-text">{task.text}</span>
                   </div>
-                  <button className="del-btn" onClick={e => { e.stopPropagation(); deleteTask(task.id); }}>
+                  <button className="del-btn icon-btn-touch" onClick={e => { e.stopPropagation(); deleteTask(task.id); }}>
                     <i className="ri-delete-bin-line"></i>
                   </button>
                 </div>
@@ -156,7 +157,7 @@ function DailyFocus({ setCurrentScreen }) {
             <h2 className="heading" style={{ fontSize: '1rem', marginBottom: '16px' }}>
               <i className="ri-bar-chart-2-line" style={{ color: 'var(--cyan)', marginRight: '8px' }}></i>Weekly Growth
             </h2>
-            <div style={{ height: '200px' }}>
+            <div style={{ height: '200px', position: 'relative', minHeight: '200px' }}>
               <Line data={chartData} options={chartOpts} />
             </div>
 
