@@ -36,6 +36,71 @@ function AlertModal({ message, onClose }) {
 // Quick-tap rep amounts — covers most logging without needing the keyboard at all
 const QUICK_ADDS = [5, 10, 25];
 
+// ---------------------------------------------------------------------------
+// IMPORTANT: These two components are defined OUTSIDE WorkoutApp on purpose.
+// If they were declared inside WorkoutApp's function body, every keystroke
+// (every re-render) would create brand-new component identities, causing
+// React to unmount + remount the <input> and drop focus/keyboard after each
+// letter. Keeping them at module scope with stable props fixes that.
+// ---------------------------------------------------------------------------
+
+function ExerciseRow({ ex, sIdx, exIdx, repInputs, setRepInputs, onLog }) {
+  const key = `${sIdx}-${exIdx}`;
+  const p = Math.min(100, ex.goal ? (ex.current / ex.goal) * 100 : 0);
+  return (
+    <div className="exercise-row">
+      <div className="ex-label">
+        <span className="ex-name">{ex.name}</span>
+        <span className="ex-count">{ex.current} / {ex.goal}</span>
+      </div>
+      <div className="progress-track"><div className="progress-fill" style={{ width: `${p}%`, background: p >= 100 ? 'var(--green)' : 'linear-gradient(90deg, var(--cyan), var(--green))' }}></div></div>
+
+      {/* Quick-add chips — one tap logs reps, no keyboard needed */}
+      <div className="quick-add-row">
+        {QUICK_ADDS.map(n => (
+          <button key={n} className="quick-add-chip" onClick={() => onLog(sIdx, exIdx, 1, n)}>+{n}</button>
+        ))}
+      </div>
+
+      {/* Manual entry for custom amounts */}
+      <div className="ex-input-row">
+        <button className="ex-btn minus" onClick={() => onLog(sIdx, exIdx, -1)} aria-label="Subtract">−</button>
+        <input
+          type="number" inputMode="numeric" placeholder="Custom"
+          value={repInputs[key] || ''}
+          onChange={e => setRepInputs(prev => ({ ...prev, [key]: e.target.value }))}
+          min="1"
+        />
+        <button className="ex-btn plus" onClick={() => onLog(sIdx, exIdx, 1)} aria-label="Add">+</button>
+      </div>
+    </div>
+  );
+}
+
+function EditRow({ ex, sIdx, exIdx, onUpdate, onDelete }) {
+  return (
+    <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
+      <input
+        type="text"
+        value={ex.name}
+        onChange={e => onUpdate(sIdx, exIdx, 'name', e.target.value)}
+        style={{ flex: 2, padding: '10px', fontSize: '16px', borderRadius: 'var(--radius-sm)' }}
+        placeholder="Exercise name"
+      />
+      <input
+        type="number" inputMode="numeric"
+        value={ex.goal}
+        onChange={e => onUpdate(sIdx, exIdx, 'goal', e.target.value)}
+        style={{ flex: 1, padding: '10px', fontSize: '16px', borderRadius: 'var(--radius-sm)', minWidth: 0 }}
+        placeholder="Goal"
+      />
+      <button className="icon-btn-touch" onClick={() => onDelete(sIdx, exIdx)} style={{ flexShrink: 0, background: 'var(--red-dim)', color: 'var(--red)' }}>
+        <i className="ri-close-line"></i>
+      </button>
+    </div>
+  );
+}
+
 function WorkoutApp({ setCurrentScreen }) {
   const [plan, setPlan] = useState(() => {
     const s = localStorage.getItem('evoLifeWorkout_v2');
@@ -81,96 +146,66 @@ function WorkoutApp({ setCurrentScreen }) {
   // amt param lets both the typed input AND the quick-add chips use the same logger
   const log = (sIdx, exIdx, mult, amtOverride) => {
     const key = `${sIdx}-${exIdx}`;
-    const amt = amtOverride ?? (parseInt(repInputs[key]) || 0);
-    if (!amt) return;
-    const np = { ...plan };
-    if (sIdx !== null) {
-      np.data[sIdx].exercises[exIdx].current = Math.max(0, np.data[sIdx].exercises[exIdx].current + amt * mult);
-    } else {
-      np.data[exIdx].current = Math.max(0, np.data[exIdx].current + amt * mult);
-    }
-    setPlan(np);
-    if (amtOverride === undefined) setRepInputs({ ...repInputs, [key]: '' });
+    setPlan(prev => {
+      const amt = amtOverride ?? (parseInt(repInputs[key]) || 0);
+      if (!amt) return prev;
+      const np = { ...prev };
+      if (sIdx !== null) {
+        np.data = np.data.map((sec, i) => i !== sIdx ? sec : {
+          ...sec,
+          exercises: sec.exercises.map((e, j) => j !== exIdx ? e : { ...e, current: Math.max(0, e.current + amt * mult) })
+        });
+      } else {
+        np.data = np.data.map((e, j) => j !== exIdx ? e : { ...e, current: Math.max(0, e.current + amt * mult) });
+      }
+      return np;
+    });
+    if (amtOverride === undefined) setRepInputs(prev => ({ ...prev, [key]: '' }));
   };
 
-  // calc totals
-  let totalGoal = 0, totalCurrent = 0;
-  if (plan) {
-    const allEx = plan.type === 'section'
-      ? plan.data.flatMap(s => s.exercises)
-      : plan.data;
-    allEx.forEach(e => { totalGoal += parseInt(e.goal || 0); totalCurrent += parseInt(e.current || 0); });
-  }
-  const totalPct = totalGoal ? Math.round((totalCurrent / totalGoal) * 100) : 0;
-
-  const ExerciseRow = ({ ex, sIdx, exIdx }) => {
-    const key = `${sIdx}-${exIdx}`;
-    const p = Math.min(100, ex.goal ? (ex.current / ex.goal) * 100 : 0);
-    return (
-      <div className="exercise-row">
-        <div className="ex-label">
-          <span className="ex-name">{ex.name}</span>
-          <span className="ex-count">{ex.current} / {ex.goal}</span>
-        </div>
-        <div className="progress-track"><div className="progress-fill" style={{ width: `${p}%`, background: p >= 100 ? 'var(--green)' : 'linear-gradient(90deg, var(--cyan), var(--green))' }}></div></div>
-
-        {/* Quick-add chips — one tap logs reps, no keyboard needed */}
-        <div className="quick-add-row">
-          {QUICK_ADDS.map(n => (
-            <button key={n} className="quick-add-chip" onClick={() => log(sIdx, exIdx, 1, n)}>+{n}</button>
-          ))}
-        </div>
-
-        {/* Manual entry for custom amounts */}
-        <div className="ex-input-row">
-          <button className="ex-btn minus" onClick={() => log(sIdx, exIdx, -1)} aria-label="Subtract">−</button>
-          <input
-            type="number" inputMode="numeric" placeholder="Custom"
-            value={repInputs[key] || ''}
-            onChange={e => setRepInputs({ ...repInputs, [key]: e.target.value })}
-            min="1"
-          />
-          <button className="ex-btn plus" onClick={() => log(sIdx, exIdx, 1)} aria-label="Add">+</button>
-        </div>
-      </div>
-    );
+  // Edit-mode field updates for name/goal — stable callback, passed to EditRow
+  const updateExerciseField = (sIdx, exIdx, field, val) => {
+    setPlan(prev => {
+      const np = { ...prev };
+      if (sIdx !== null) {
+        np.data = np.data.map((sec, i) => i !== sIdx ? sec : {
+          ...sec,
+          exercises: sec.exercises.map((e, j) => j !== exIdx ? e : { ...e, [field]: val })
+        });
+      } else {
+        np.data = np.data.map((e, j) => j !== exIdx ? e : { ...e, [field]: val });
+      }
+      return np;
+    });
   };
 
-  const EditRow = ({ ex, sIdx, exIdx }) => {
-    const updateEx = (field, val) => {
-      const np = { ...plan };
-      if (sIdx !== null) np.data[sIdx].exercises[exIdx][field] = val;
-      else np.data[exIdx][field] = val;
-      setPlan(np);
-    };
-    const delEx = () => {
-      setConfirmModal({
-        message: 'Remove this exercise from your plan?',
-        onConfirm: () => {
-          const np = { ...plan };
-          if (sIdx !== null) np.data[sIdx].exercises.splice(exIdx, 1);
-          else np.data.splice(exIdx, 1);
-          setPlan(np);
-          setConfirmModal(null);
-        }
-      });
-    };
-    return (
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
-        <input type="text" value={ex.name} onChange={e => updateEx('name', e.target.value)} style={{ flex: 2, padding: '10px', fontSize: '16px', borderRadius: 'var(--radius-sm)' }} placeholder="Exercise name" />
-        <input type="number" inputMode="numeric" value={ex.goal} onChange={e => updateEx('goal', e.target.value)} style={{ flex: 1, padding: '10px', fontSize: '16px', borderRadius: 'var(--radius-sm)', minWidth: 0 }} placeholder="Goal" />
-        <button className="icon-btn-touch" onClick={delEx} style={{ flexShrink: 0, background: 'var(--red-dim)', color: 'var(--red)' }}><i className="ri-close-line"></i></button>
-      </div>
-    );
+  const deleteExercise = (sIdx, exIdx) => {
+    setConfirmModal({
+      message: 'Remove this exercise from your plan?',
+      onConfirm: () => {
+        setPlan(prev => {
+          const np = { ...prev };
+          if (sIdx !== null) {
+            np.data = np.data.map((sec, i) => i !== sIdx ? sec : { ...sec, exercises: sec.exercises.filter((_, j) => j !== exIdx) });
+          } else {
+            np.data = np.data.filter((_, j) => j !== exIdx);
+          }
+          return np;
+        });
+        setConfirmModal(null);
+      }
+    });
+  };
+
+  const updateSectionName = (sIdx, val) => {
+    setPlan(prev => ({ ...prev, data: prev.data.map((sec, i) => i !== sIdx ? sec : { ...sec, sectionName: val }) }));
   };
 
   const deleteSection = (sIdx) => {
     setConfirmModal({
       message: 'Delete this entire section and its exercises?',
       onConfirm: () => {
-        const np = { ...plan };
-        np.data.splice(sIdx, 1);
-        setPlan(np);
+        setPlan(prev => ({ ...prev, data: prev.data.filter((_, i) => i !== sIdx) }));
         setConfirmModal(null);
       }
     });
@@ -183,6 +218,28 @@ function WorkoutApp({ setCurrentScreen }) {
       onConfirm: () => { setPlan(null); setConfirmModal(null); }
     });
   };
+
+  const addExerciseToSection = (sIdx) => {
+    setPlan(prev => ({ ...prev, data: prev.data.map((sec, i) => i !== sIdx ? sec : { ...sec, exercises: [...sec.exercises, { name: 'New Exercise', goal: 100, current: 0 }] }) }));
+  };
+
+  const addExerciseToList = () => {
+    setPlan(prev => ({ ...prev, data: [...prev.data, { name: 'New Exercise', goal: 100, current: 0 }] }));
+  };
+
+  const addSection = () => {
+    setPlan(prev => ({ ...prev, data: [...prev.data, { sectionName: 'New Section', exercises: [{ name: 'Exercise', goal: 100, current: 0 }] }] }));
+  };
+
+  // calc totals
+  let totalGoal = 0, totalCurrent = 0;
+  if (plan) {
+    const allEx = plan.type === 'section'
+      ? plan.data.flatMap(s => s.exercises)
+      : plan.data;
+    allEx.forEach(e => { totalGoal += parseInt(e.goal || 0); totalCurrent += parseInt(e.current || 0); });
+  }
+  const totalPct = totalGoal ? Math.round((totalCurrent / totalGoal) * 100) : 0;
 
   return (
     <div className="screen">
@@ -241,9 +298,12 @@ function WorkoutApp({ setCurrentScreen }) {
                 <div key={sIdx} className="card section-card animate-fadeUp" style={{ animationDelay: `${sIdx * 60}ms` }}>
                   {isEditing ? (
                     <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', alignItems: 'center' }}>
-                      <input type="text" value={sec.sectionName}
-                        onChange={e => { const np = {...plan}; np.data[sIdx].sectionName = e.target.value; setPlan(np); }}
-                        style={{ flex: 1, fontWeight: 700, fontSize: '16px' }} />
+                      <input
+                        type="text"
+                        value={sec.sectionName}
+                        onChange={e => updateSectionName(sIdx, e.target.value)}
+                        style={{ flex: 1, fontWeight: 700, fontSize: '16px' }}
+                      />
                       <button className="icon-btn-touch" onClick={() => deleteSection(sIdx)} style={{ background: 'var(--red-dim)', color: 'var(--red)' }}>
                         <i className="ri-delete-bin-line"></i>
                       </button>
@@ -253,11 +313,11 @@ function WorkoutApp({ setCurrentScreen }) {
                   )}
                   {sec.exercises.map((ex, exIdx) =>
                     isEditing
-                      ? <EditRow key={exIdx} ex={ex} sIdx={sIdx} exIdx={exIdx} />
-                      : <ExerciseRow key={exIdx} ex={ex} sIdx={sIdx} exIdx={exIdx} />
+                      ? <EditRow key={exIdx} ex={ex} sIdx={sIdx} exIdx={exIdx} onUpdate={updateExerciseField} onDelete={deleteExercise} />
+                      : <ExerciseRow key={exIdx} ex={ex} sIdx={sIdx} exIdx={exIdx} repInputs={repInputs} setRepInputs={setRepInputs} onLog={log} />
                   )}
                   {isEditing && (
-                    <button onClick={() => { const np = {...plan}; np.data[sIdx].exercises.push({ name: 'New Exercise', goal: 100, current: 0 }); setPlan(np); }}
+                    <button onClick={() => addExerciseToSection(sIdx)}
                       style={{ width: '100%', padding: '12px', border: '1px dashed var(--muted-2)', background: 'none', color: 'var(--green)', borderRadius: 'var(--radius-sm)', fontSize: '0.85rem', marginTop: '8px', minHeight: 44 }}>
                       + Add Exercise
                     </button>
@@ -268,11 +328,11 @@ function WorkoutApp({ setCurrentScreen }) {
               <div className="card section-card animate-fadeUp">
                 {plan.data.map((ex, i) =>
                   isEditing
-                    ? <EditRow key={i} ex={ex} sIdx={null} exIdx={i} />
-                    : <ExerciseRow key={i} ex={ex} sIdx={null} exIdx={i} />
+                    ? <EditRow key={i} ex={ex} sIdx={null} exIdx={i} onUpdate={updateExerciseField} onDelete={deleteExercise} />
+                    : <ExerciseRow key={i} ex={ex} sIdx={null} exIdx={i} repInputs={repInputs} setRepInputs={setRepInputs} onLog={log} />
                 )}
                 {isEditing && (
-                  <button onClick={() => { const np = {...plan}; np.data.push({ name: 'New Exercise', goal: 100, current: 0 }); setPlan(np); }}
+                  <button onClick={addExerciseToList}
                     style={{ width: '100%', padding: '12px', border: '1px dashed var(--muted-2)', background: 'none', color: 'var(--green)', borderRadius: 'var(--radius-sm)', fontSize: '0.85rem', marginTop: '8px', minHeight: 44 }}>
                     + Add Exercise
                   </button>
@@ -280,8 +340,7 @@ function WorkoutApp({ setCurrentScreen }) {
               </div>
             )}
             {isEditing && plan.type === 'section' && (
-              <button className="btn-ghost" style={{ marginTop: '8px', minHeight: 48 }}
-                onClick={() => { const np = {...plan}; np.data.push({ sectionName: 'New Section', exercises: [{ name: 'Exercise', goal: 100, current: 0 }] }); setPlan(np); }}>
+              <button className="btn-ghost" style={{ marginTop: '8px', minHeight: 48 }} onClick={addSection}>
                 + Add Body Part Section
               </button>
             )}
@@ -318,19 +377,23 @@ function WorkoutApp({ setCurrentScreen }) {
                       builder.map((sec, sIdx) => (
                         <div key={sIdx} className="card" style={{ padding: '14px', marginBottom: '12px' }}>
                           <input type="text" placeholder="Section name (e.g. Chest)" value={sec.sectionName}
-                            onChange={e => { const b = [...builder]; b[sIdx].sectionName = e.target.value; setBuilder(b); }}
+                            onChange={e => setBuilder(prev => prev.map((s, i) => i !== sIdx ? s : { ...s, sectionName: e.target.value }))}
                             style={{ fontWeight: 700, marginBottom: '10px', fontSize: '16px' }} />
                           {sec.exercises.map((ex, exIdx) => (
                             <div key={exIdx} style={{ display: 'flex', gap: '8px', marginBottom: '6px' }}>
                               <input type="text" placeholder="Exercise" value={ex.name}
-                                onChange={e => { const b = [...builder]; b[sIdx].exercises[exIdx].name = e.target.value; setBuilder(b); }}
+                                onChange={e => setBuilder(prev => prev.map((s, i) => i !== sIdx ? s : {
+                                  ...s, exercises: s.exercises.map((ex2, j) => j !== exIdx ? ex2 : { ...ex2, name: e.target.value })
+                                }))}
                                 style={{ flex: 2, padding: '10px', fontSize: '16px' }} />
                               <input type="number" inputMode="numeric" placeholder="Goal" value={ex.goal}
-                                onChange={e => { const b = [...builder]; b[sIdx].exercises[exIdx].goal = e.target.value; setBuilder(b); }}
+                                onChange={e => setBuilder(prev => prev.map((s, i) => i !== sIdx ? s : {
+                                  ...s, exercises: s.exercises.map((ex2, j) => j !== exIdx ? ex2 : { ...ex2, goal: e.target.value })
+                                }))}
                                 style={{ flex: 1, padding: '10px', fontSize: '16px', minWidth: 0 }} />
                             </div>
                           ))}
-                          <button onClick={() => { const b = [...builder]; b[sIdx].exercises.push({ name: '', goal: '' }); setBuilder(b); }}
+                          <button onClick={() => setBuilder(prev => prev.map((s, i) => i !== sIdx ? s : { ...s, exercises: [...s.exercises, { name: '', goal: '' }] }))}
                             style={{ fontSize: '0.8rem', color: 'var(--green)', background: 'none', border: 'none', marginTop: '6px', minHeight: 36 }}>+ Exercise</button>
                         </div>
                       ))
@@ -338,10 +401,10 @@ function WorkoutApp({ setCurrentScreen }) {
                       builder.map((item, i) => (
                         <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
                           <input type="text" placeholder="Exercise name" value={item.name}
-                            onChange={e => { const b = [...builder]; b[i].name = e.target.value; setBuilder(b); }}
+                            onChange={e => setBuilder(prev => prev.map((it, idx) => idx !== i ? it : { ...it, name: e.target.value }))}
                             style={{ flex: 2, fontSize: '16px' }} />
                           <input type="number" inputMode="numeric" placeholder="Monthly goal" value={item.goal}
-                            onChange={e => { const b = [...builder]; b[i].goal = e.target.value; setBuilder(b); }}
+                            onChange={e => setBuilder(prev => prev.map((it, idx) => idx !== i ? it : { ...it, goal: e.target.value }))}
                             style={{ flex: 1, minWidth: 0, fontSize: '16px' }} />
                         </div>
                       ))
