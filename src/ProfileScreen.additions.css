@@ -1,0 +1,106 @@
+/* ============================================================
+   ProfileScreen additions — append to the end of App.css
+   Only new class names, nothing here overrides existing rules.
+   ============================================================ */
+
+/* Avatar */
+.profile-avatar-ring {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  padding: 3px;
+  background: linear-gradient(135deg, var(--cyan), var(--purple));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.profile-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--bg-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: var(--cyan);
+}
+
+/* Stat cards */
+.profile-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--sp-3);
+}
+@media (min-width: 480px) {
+  .profile-stat-grid { grid-template-columns: repeat(4, 1fr); }
+}
+.profile-stat-card {
+  background: var(--bg-3);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  padding: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  animation: fadeUp var(--dur-med) var(--ease-out) both;
+}
+.profile-stat-card i { font-size: 1.3rem; }
+.profile-stat-value {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-h);
+}
+.profile-stat-label {
+  font-size: 0.68rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
+/* Account details rows */
+.profile-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 52px;
+  padding: var(--sp-3) 0;
+  border-bottom: 1px solid var(--border-soft);
+  font-size: var(--fs-sm);
+  color: var(--text-h);
+  font-weight: 600;
+}
+
+/* Theme toggle switch */
+.profile-toggle {
+  width: 48px;
+  height: 28px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  position: relative;
+  padding: 2px;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+.profile-toggle[data-on="true"] {
+  background: var(--cyan-dim);
+  border-color: var(--cyan);
+}
+.profile-toggle-knob {
+  display: block;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: transform var(--dur-fast) var(--ease-spring), background var(--dur-fast) var(--ease-out);
+}
+.profile-toggle[data-on="true"] .profile-toggle-knob {
+  transform: translateX(20px);
+  background: var(--cyan);
+}
