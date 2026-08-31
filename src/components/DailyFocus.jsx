@@ -6,7 +6,7 @@ import {
 } from 'chart.js';
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Filler);
 
-function DailyFocus({ setCurrentScreen }) {
+function DailyFocus() {
   const [tasks, setTasks] = useState(() => {
     const saved = localStorage.getItem('evoLifeTasks');
     const lastDate = localStorage.getItem('evoLifeLastDate');
@@ -82,9 +82,6 @@ function DailyFocus({ setCurrentScreen }) {
       <div className="app-wrap">
         <div className="app-header animate-fadeUp">
           <div className="app-header-left">
-            <button className="back-btn" onClick={() => setCurrentScreen('welcome')}>
-              <i className="ri-arrow-left-line"></i> Back
-            </button>
             <div className="app-title-block">
               <h1 className="display grad-text">Daily Focus</h1>
               <p>{todayText}</p>

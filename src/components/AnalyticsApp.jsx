@@ -88,9 +88,6 @@ function AnalyticsApp({ setCurrentScreen }) {
       <div className="app-wrap">
         <div className="app-header animate-fadeUp">
           <div className="app-header-left">
-            <button className="back-btn" onClick={() => setCurrentScreen('welcome')}>
-              <i className="ri-arrow-left-line"></i> Back
-            </button>
             <div className="app-title-block">
               <h1 className="display grad-text">Analytics</h1>
               <p>Performance overview</p>

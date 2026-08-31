@@ -1,106 +1,371 @@
 /* ============================================================
-   ProfileScreen additions — append to the end of App.css
-   Only new class names, nothing here overrides existing rules.
+   ProfileScreen – Professional redesign styles
    ============================================================ */
 
-/* Avatar */
-.profile-avatar-ring {
-  width: 96px;
-  height: 96px;
-  border-radius: 50%;
-  padding: 3px;
-  background: linear-gradient(135deg, var(--cyan), var(--purple));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.profile-avatar {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  background: var(--bg-2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-display);
-  font-size: 1.7rem;
-  font-weight: 800;
-  color: var(--cyan);
-}
-
-/* Stat cards */
-.profile-stat-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--sp-3);
-}
-@media (min-width: 480px) {
-  .profile-stat-grid { grid-template-columns: repeat(4, 1fr); }
-}
-.profile-stat-card {
-  background: var(--bg-3);
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-md);
-  padding: var(--sp-4);
+/* ── Hero card ──────────────────────────────────────────────────────────── */
+.pf-hero {
+  position: relative;
+  border-radius: var(--radius-xl, 28px);
+  overflow: hidden;
+  background: var(--glass, rgba(255,255,255,0.04));
+  border: 1px solid var(--glass-border, rgba(255,255,255,0.08));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  margin-bottom: 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 6px;
-  animation: fadeUp var(--dur-med) var(--ease-out) both;
-}
-.profile-stat-card i { font-size: 1.3rem; }
-.profile-stat-value {
-  font-family: var(--font-display);
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: var(--text-h);
-}
-.profile-stat-label {
-  font-size: 0.68rem;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  font-weight: 600;
 }
 
-/* Account details rows */
-.profile-info-row {
+/* Decorative banner */
+.pf-banner {
+  width: 100%;
+  height: 120px;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg,
+    rgba(0,212,255,0.18) 0%,
+    rgba(167,139,250,0.15) 50%,
+    rgba(0,229,160,0.12) 100%);
+  flex-shrink: 0;
+}
+.pf-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(28px);
+}
+.pf-orb-1 {
+  width: 140px; height: 140px;
+  top: -40px; left: -20px;
+  background: radial-gradient(circle, rgba(0,212,255,0.5), transparent 70%);
+}
+.pf-orb-2 {
+  width: 120px; height: 120px;
+  top: -20px; right: 30px;
+  background: radial-gradient(circle, rgba(167,139,250,0.45), transparent 70%);
+}
+.pf-orb-3 {
+  width: 100px; height: 100px;
+  bottom: -20px; left: 40%;
+  background: radial-gradient(circle, rgba(0,229,160,0.35), transparent 70%);
+}
+.pf-banner-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* ── Avatar ─────────────────────────────────────────────────────────────── */
+.pf-avatar-wrap {
+  position: relative;
+  margin-top: -52px;
+  margin-bottom: 4px;
+  z-index: 2;
+}
+.pf-avatar-ring {
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  padding: 3px;
+  background: linear-gradient(135deg, var(--cyan), var(--purple));
+  box-shadow: 0 0 28px rgba(0,212,255,0.35), 0 8px 32px rgba(0,0,0,0.4);
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  min-height: 52px;
-  padding: var(--sp-3) 0;
-  border-bottom: 1px solid var(--border-soft);
-  font-size: var(--fs-sm);
-  color: var(--text-h);
+  justify-content: center;
+}
+.pf-avatar-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--bg-2, #0d1526);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--cyan);
+  border: 3px solid var(--bg-2, #0d1526);
+}
+.pf-edit-fab {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--cyan);
+  border: 2px solid var(--bg-2, #0d1526);
+  color: var(--bg, #070b14);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: transform 0.18s var(--spring), box-shadow 0.18s;
+  box-shadow: 0 2px 10px rgba(0,212,255,0.4);
+}
+.pf-edit-fab:hover { transform: scale(1.15); box-shadow: 0 4px 18px rgba(0,212,255,0.55); }
+.pf-edit-fab:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Identity text ──────────────────────────────────────────────────────── */
+.pf-identity {
+  padding: 6px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.pf-name {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--text-h, #f0f4ff);
+  margin: 0;
+}
+.pf-handle {
+  display: inline-block;
+  font-size: 0.78rem;
   font-weight: 600;
+  color: var(--cyan);
+  background: var(--cyan-dim, rgba(0,212,255,0.12));
+  border: 1px solid rgba(0,212,255,0.25);
+  border-radius: 99px;
+  padding: 2px 10px;
+  letter-spacing: 0.01em;
+}
+.pf-email {
+  font-size: 0.82rem;
+  color: var(--muted, #6b7fa3);
+  margin-top: 2px;
+}
+.pf-since {
+  font-size: 0.72rem;
+  color: var(--muted-2, #3d4f70);
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 
-/* Theme toggle switch */
-.profile-toggle {
+/* Skeleton shimmer */
+.pf-skel {
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--glass, rgba(255,255,255,0.04)) 25%, rgba(255,255,255,0.1) 50%, var(--glass, rgba(255,255,255,0.04)) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+.pf-skel-name { width: 140px; height: 24px; }
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+/* ── Section title ──────────────────────────────────────────────────────── */
+.pf-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted, #6b7fa3);
+  margin: 20px 0 10px;
+}
+.pf-section-title i { color: var(--cyan); font-size: 1rem; }
+
+/* ── Stat cards with ring ───────────────────────────────────────────────── */
+.pf-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 4px;
+}
+@media (min-width: 460px) { .pf-stat-grid { grid-template-columns: repeat(4, 1fr); } }
+
+.pf-stat-card {
+  background: var(--glass, rgba(255,255,255,0.04));
+  border: 1px solid var(--glass-border, rgba(255,255,255,0.07));
+  border-radius: 20px;
+  padding: 16px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  animation: fadeUp 0.4s var(--ease-out, cubic-bezier(0.16,1,0.3,1)) both;
+  backdrop-filter: blur(10px);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.pf-stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.2);
+}
+.pf-ring-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pf-ring-icon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+.pf-stat-val {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--text-h, #f0f4ff);
+  line-height: 1;
+}
+.pf-stat-lbl {
+  font-size: 0.65rem;
+  color: var(--muted, #6b7fa3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* ── Info card ──────────────────────────────────────────────────────────── */
+.pf-info-card {
+  background: var(--glass, rgba(255,255,255,0.04));
+  border: 1px solid var(--glass-border, rgba(255,255,255,0.07));
+  border-radius: 20px;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  margin-bottom: 4px;
+}
+.pf-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  min-height: 54px;
+  transition: background 0.15s;
+}
+.pf-info-row:hover { background: var(--glass-hover, rgba(255,255,255,0.06)); }
+.pf-info-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.pf-info-ico {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--cyan-dim, rgba(0,212,255,0.12));
+  border: 1px solid rgba(0,212,255,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cyan);
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+.pf-info-label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--muted, #6b7fa3);
+}
+.pf-info-value {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-h, #f0f4ff);
+}
+
+/* ── Toggle switch ──────────────────────────────────────────────────────── */
+.pf-toggle {
   width: 48px;
   height: 28px;
-  border-radius: var(--radius-pill);
-  background: var(--bg-1);
-  border: 1px solid var(--border);
+  border-radius: 99px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
   position: relative;
-  padding: 2px;
-  transition: background var(--dur-fast) var(--ease-out);
+  padding: 3px;
+  cursor: pointer;
+  transition: background 0.25s, border-color 0.25s;
+  flex-shrink: 0;
 }
-.profile-toggle[data-on="true"] {
-  background: var(--cyan-dim);
+.pf-toggle[data-on="true"] {
+  background: var(--cyan-dim, rgba(0,212,255,0.2));
   border-color: var(--cyan);
 }
-.profile-toggle-knob {
+.pf-toggle-knob {
   display: block;
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  background: var(--muted);
-  transition: transform var(--dur-fast) var(--ease-spring), background var(--dur-fast) var(--ease-out);
+  background: var(--muted, #6b7fa3);
+  transition: transform 0.25s var(--spring, cubic-bezier(0.34,1.56,0.64,1)), background 0.25s;
 }
-.profile-toggle[data-on="true"] .profile-toggle-knob {
+.pf-toggle[data-on="true"] .pf-toggle-knob {
   transform: translateX(20px);
   background: var(--cyan);
+  box-shadow: 0 0 8px rgba(0,212,255,0.5);
 }
+
+/* ── Logout button ──────────────────────────────────────────────────────── */
+.pf-logout {
+  width: 100%;
+  margin-top: 20px;
+  min-height: 50px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,77,109,0.35);
+  background: rgba(255,77,109,0.06);
+  color: var(--red, #ff4d6d);
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-family: var(--font-display);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+  letter-spacing: 0.02em;
+}
+.pf-logout:hover {
+  background: rgba(255,77,109,0.14);
+  border-color: rgba(255,77,109,0.6);
+  transform: translateY(-1px);
+}
+.pf-logout:active { transform: translateY(0); }
+
+/* ── Preserve old class names used elsewhere ────────────────────────────── */
+.profile-avatar-ring {
+  width: 96px; height: 96px; border-radius: 50%;
+  padding: 3px;
+  background: linear-gradient(135deg, var(--cyan), var(--purple));
+  display: flex; align-items: center; justify-content: center;
+}
+.profile-avatar {
+  width: 100%; height: 100%; border-radius: 50%;
+  background: var(--bg-2);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display); font-size: 1.7rem; font-weight: 800; color: var(--cyan);
+}
+.profile-info-row {
+  display: flex; justify-content: space-between; align-items: center;
+  min-height: 52px; padding: var(--sp-3, 12px) 0;
+  border-bottom: 1px solid var(--border-soft);
+  font-size: var(--fs-sm, 0.875rem); color: var(--text-h); font-weight: 600;
+}
+.profile-toggle {
+  width: 48px; height: 28px; border-radius: 99px;
+  background: var(--bg-1); border: 1px solid var(--border);
+  position: relative; padding: 2px;
+  transition: background 0.2s;
+}
+.profile-toggle[data-on="true"] { background: var(--cyan-dim); border-color: var(--cyan); }
+.profile-toggle-knob {
+  display: block; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--muted);
+  transition: transform 0.2s, background 0.2s;
+}
+.profile-toggle[data-on="true"] .profile-toggle-knob { transform: translateX(20px); background: var(--cyan); }

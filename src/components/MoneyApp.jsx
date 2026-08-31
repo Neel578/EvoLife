@@ -34,7 +34,7 @@ function AlertModal({ message, onClose }) {
   );
 }
 
-function MoneyApp({ setCurrentScreen }) {
+function MoneyApp() {
   const [moneyData, setMoneyData] = useState(() => {
     const s = localStorage.getItem('evoLifeMoney');
     return s ? JSON.parse(s) : { target: 0, transactions: [] };
@@ -95,9 +95,6 @@ function MoneyApp({ setCurrentScreen }) {
       <div className="app-wrap">
         <div className="app-header animate-fadeUp">
           <div className="app-header-left">
-            <button className="back-btn" onClick={() => setCurrentScreen('welcome')}>
-              <i className="ri-arrow-left-line"></i> Back
-            </button>
             <div className="app-title-block">
               <h1 className="display grad-amber">Financial Freedom</h1>
               <p>45 / 15 / 25 / 10 Rule</p>

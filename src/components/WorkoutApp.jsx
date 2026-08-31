@@ -101,7 +101,7 @@ function EditRow({ ex, sIdx, exIdx, onUpdate, onDelete }) {
   );
 }
 
-function WorkoutApp({ setCurrentScreen }) {
+function WorkoutApp() {
   const [plan, setPlan] = useState(() => {
     const s = localStorage.getItem('evoLifeWorkout_v2');
     return s ? JSON.parse(s) : null;
@@ -246,9 +246,6 @@ function WorkoutApp({ setCurrentScreen }) {
       <div className="app-wrap">
         <div className="app-header animate-fadeUp">
           <div className="app-header-left">
-            <button className="back-btn" onClick={() => setCurrentScreen('welcome')}>
-              <i className="ri-arrow-left-line"></i> Back
-            </button>
             <div className="app-title-block">
               <h1 className="display" style={{ background: 'linear-gradient(135deg, var(--red), var(--amber))', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>
                 Physical Growth

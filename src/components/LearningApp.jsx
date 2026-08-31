@@ -65,7 +65,7 @@ const TYPE_LABELS = {
   'Project Planning': { title: 'New Project Board', placeholder: 'e.g. App Launch Plan' },
 };
 
-function LearningApp({ setCurrentScreen }) {
+function LearningApp() {
   const [courses, setCourses] = useState(() => {
     const s = localStorage.getItem('evoLifeLearning');
     return s ? JSON.parse(s) : [];
@@ -239,9 +239,6 @@ function LearningApp({ setCurrentScreen }) {
       <div className="app-wrap">
         <div className="app-header animate-fadeUp">
           <div className="app-header-left">
-            <button className="back-btn" onClick={() => setCurrentScreen('welcome')}>
-              <i className="ri-arrow-left-line"></i> Back
-            </button>
             <div className="app-title-block">
               <h1 className="display grad-purple">Mental Growth</h1>
               <p>Learning & Projects</p>
