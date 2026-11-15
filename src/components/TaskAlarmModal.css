@@ -1,0 +1,399 @@
+/* ══════════════════════════════════════════════════════════════
+   TaskAlarmModal & Inline Time-Pill Styles — EvoLife v2
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Modal Container ─────────────────────────────────────────── */
+.alarm-modal-box {
+  width: 100%;
+  max-width: 440px;
+  background: var(--bg-2, #0d1526);
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.1));
+  border-radius: var(--radius-xl, 28px);
+  padding: 24px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7), 0 0 30px rgba(0, 212, 255, 0.15);
+  animation: scaleIn 0.25s var(--spring, cubic-bezier(0.34, 1.56, 0.64, 1)) both;
+  color: var(--text, #f0f4ff);
+}
+
+/* ── Post-Add Alarm Prompt ───────────────────────────────────── */
+.alarm-prompt-content {
+  display: flex; flex-direction: column; align-items: center;
+  text-align: center; padding: 10px 4px 6px;
+}
+.alarm-bell-icon-wrap {
+  width: 64px; height: 64px; border-radius: 20px;
+  background: rgba(0, 212, 255, 0.12);
+  border: 1.5px solid rgba(0, 212, 255, 0.35);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--cyan, #00d4ff); font-size: 2rem;
+  margin-bottom: 16px;
+  box-shadow: 0 0 24px rgba(0, 212, 255, 0.3);
+  animation: bellShake 1.8s ease-in-out infinite;
+}
+@keyframes bellShake {
+  0%, 100% { transform: rotate(0deg); }
+  10%, 30% { transform: rotate(-10deg); }
+  20%, 40% { transform: rotate(10deg); }
+  50% { transform: rotate(0deg); }
+}
+.alarm-prompt-title {
+  font-family: var(--font-display, 'Syne', sans-serif);
+  font-size: 1.3rem; font-weight: 800; margin-bottom: 8px; color: #fff;
+}
+.alarm-task-highlight { color: var(--cyan, #00d4ff); font-weight: 700; }
+.alarm-prompt-desc {
+  font-size: 0.88rem; color: var(--muted, #6b7fa3); line-height: 1.5;
+  margin-bottom: 24px; max-width: 320px;
+}
+.alarm-prompt-actions { display: flex; gap: 12px; width: 100%; }
+.alarm-prompt-actions button {
+  flex: 1; min-height: 48px; display: flex; align-items: center; justify-content: center;
+}
+
+/* ── Time Picker Header ──────────────────────────────────────── */
+.alarm-picker-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  margin-bottom: 20px;
+}
+.alarm-picker-title-group h3 {
+  font-family: var(--font-display, 'Syne', sans-serif);
+  font-size: 1.25rem; font-weight: 800; color: #fff;
+}
+.alarm-picker-task-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(0, 212, 255, 0.1);
+  border: 1px solid rgba(0, 212, 255, 0.25);
+  color: var(--cyan, #00d4ff);
+  font-size: 0.78rem; font-weight: 700;
+  padding: 4px 10px; border-radius: 99px; margin-top: 6px;
+  max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* ── Digital Clock Stepper ───────────────────────────────────── */
+.alarm-digital-clock {
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-lg, 20px); padding: 18px 14px; margin-bottom: 18px;
+}
+.alarm-digits-col { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.alarm-stepper-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+  color: var(--muted, #6b7fa3); width: 38px; height: 32px;
+  border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  font-size: 0.9rem; cursor: pointer; transition: all 0.2s ease;
+}
+.alarm-stepper-btn:hover {
+  background: rgba(0, 212, 255, 0.15);
+  color: var(--cyan, #00d4ff); border-color: rgba(0, 212, 255, 0.4);
+}
+.alarm-digits-display {
+  font-family: var(--font-display, 'Syne', sans-serif);
+  font-size: 2.4rem; font-weight: 800; color: #fff;
+  min-width: 56px; text-align: center; line-height: 1;
+  text-shadow: 0 0 16px rgba(0, 212, 255, 0.4);
+}
+.alarm-colon {
+  font-family: var(--font-display, 'Syne', sans-serif);
+  font-size: 2.2rem; font-weight: 800; color: var(--cyan, #00d4ff);
+  margin-top: -4px; animation: pulseColon 1s infinite alternate;
+}
+@keyframes pulseColon { from { opacity: 0.4; } to { opacity: 1; } }
+.alarm-ampm-col { display: flex; flex-direction: column; gap: 6px; margin-left: 6px; }
+.alarm-ampm-btn {
+  padding: 8px 12px; border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+  color: var(--muted, #6b7fa3);
+  font-family: var(--font-display, 'Syne', sans-serif);
+  font-size: 0.82rem; font-weight: 800; cursor: pointer; transition: all 0.2s ease;
+}
+.alarm-ampm-btn.active {
+  background: var(--cyan, #00d4ff); color: #000;
+  border-color: var(--cyan, #00d4ff);
+  box-shadow: 0 0 14px rgba(0, 212, 255, 0.4);
+}
+
+/* ── Quick Presets ────────────────────────────────────────────── */
+.alarm-presets-section { margin-bottom: 18px; }
+.alarm-presets-label {
+  font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--muted, #6b7fa3);
+  margin-bottom: 8px; display: block;
+}
+.alarm-presets-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.alarm-preset-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-sm, 12px); padding: 8px 4px;
+  text-align: center; cursor: pointer; transition: all 0.2s ease;
+  color: var(--text, #f0f4ff);
+}
+.alarm-preset-btn:hover {
+  background: rgba(0, 212, 255, 0.1); border-color: rgba(0, 212, 255, 0.35);
+  transform: translateY(-2px);
+}
+.alarm-preset-time { font-size: 0.78rem; font-weight: 700; display: block; }
+.alarm-preset-tag { font-size: 0.68rem; color: var(--muted, #6b7fa3); display: block; margin-top: 2px; }
+
+/* ── Duration Presets Grid ───────────────────────────────────── */
+.alarm-duration-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+}
+.alarm-duration-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+  border-radius: 10px; padding: 8px 6px;
+  color: var(--text, #f0f4ff); font-size: 0.8rem; font-weight: 700;
+  cursor: pointer; transition: all 0.2s ease; text-align: center;
+}
+.alarm-duration-btn:hover {
+  background: rgba(0, 229, 160, 0.1); border-color: rgba(0, 229, 160, 0.3);
+  transform: translateY(-1px);
+}
+.alarm-duration-btn.active {
+  background: rgba(0, 229, 160, 0.15);
+  border-color: var(--green, #00e5a0); color: var(--green, #00e5a0);
+  box-shadow: 0 0 10px rgba(0, 229, 160, 0.25);
+}
+
+/* ── Notification Preview ────────────────────────────────────── */
+.alarm-preview-card {
+  background: rgba(0, 212, 255, 0.06);
+  border: 1px dashed rgba(0, 212, 255, 0.3);
+  border-radius: var(--radius-md, 16px); padding: 12px 14px;
+  margin-bottom: 20px; display: flex; gap: 12px; align-items: flex-start;
+}
+.alarm-preview-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: rgba(0, 212, 255, 0.15); color: var(--cyan, #00d4ff);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; flex-shrink: 0;
+}
+.alarm-preview-info { flex: 1; }
+.alarm-preview-title { font-size: 0.82rem; font-weight: 700; color: #fff; margin-bottom: 2px; }
+.alarm-preview-body { font-size: 0.75rem; color: var(--muted, #6b7fa3); line-height: 1.4; }
+
+/* ── Toggle & Controls ───────────────────────────────────────── */
+.alarm-controls-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 0 16px; border-top: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+}
+.alarm-toggle-label {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 0.85rem; font-weight: 600; color: #fff; cursor: pointer;
+}
+.alarm-toggle-input {
+  appearance: none; width: 38px; height: 22px;
+  background: rgba(255, 255, 255, 0.15); border-radius: 99px;
+  position: relative; outline: none; cursor: pointer;
+  transition: background 0.25s ease;
+}
+.alarm-toggle-input::after {
+  content: ''; position: absolute; top: 3px; left: 3px;
+  width: 16px; height: 16px; background: #fff; border-radius: 50%;
+  transition: transform 0.25s var(--spring, cubic-bezier(0.34, 1.56, 0.64, 1));
+}
+.alarm-toggle-input:checked { background: var(--cyan, #00d4ff); }
+.alarm-toggle-input:checked::after { transform: translateX(16px); }
+
+.alarm-remove-btn {
+  background: transparent; border: none; color: var(--red, #ff4d6d);
+  font-size: 0.82rem; font-weight: 700; cursor: pointer;
+  padding: 4px 8px; border-radius: 6px; transition: all 0.2s ease;
+  display: flex; align-items: center; gap: 4px;
+}
+.alarm-remove-btn:hover { background: rgba(255, 77, 109, 0.12); }
+
+/* ── Modal Action Buttons ────────────────────────────────────── */
+.alarm-picker-actions { display: flex; gap: 12px; }
+.alarm-picker-actions button {
+  flex: 1; min-height: 48px; display: flex; align-items: center; justify-content: center;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Inline "Add a time" Pill (inside the input bar)
+   ══════════════════════════════════════════════════════════════ */
+.task-add-row-v2 { display: flex; gap: 10px; margin-bottom: 20px; }
+
+.task-input-wrap {
+  flex: 1; position: relative; display: flex; align-items: center;
+}
+.task-input-wrap input {
+  width: 100%; padding-right: 120px; /* room for the inline pill */
+}
+.inline-time-pill {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 10px; border-radius: 99px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.1));
+  color: var(--muted, #6b7fa3); font-size: 0.72rem; font-weight: 700;
+  cursor: pointer; transition: all 0.2s ease; white-space: nowrap;
+}
+.inline-time-pill i { font-size: 0.85rem; }
+.inline-time-pill:hover {
+  background: rgba(0, 212, 255, 0.1); color: var(--cyan, #00d4ff);
+  border-color: rgba(0, 212, 255, 0.35);
+}
+.inline-time-pill.has-time {
+  background: rgba(0, 212, 255, 0.14); color: var(--cyan, #00d4ff);
+  border-color: rgba(0, 212, 255, 0.45);
+  box-shadow: 0 0 8px rgba(0, 212, 255, 0.2);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Habit Card Upgrades — Timed Card Glow & Badges
+   ══════════════════════════════════════════════════════════════ */
+
+/* Timed card with cyan glow border */
+.task-item.task-timed {
+  border: 1px solid rgba(0, 212, 255, 0.45) !important;
+  box-shadow: 0 0 14px rgba(0, 212, 255, 0.12), inset 0 0 20px rgba(0, 212, 255, 0.03);
+  background: rgba(0, 212, 255, 0.04);
+}
+.task-item.task-timed:hover {
+  border-color: rgba(0, 212, 255, 0.6) !important;
+  box-shadow: 0 0 22px rgba(0, 212, 255, 0.18), inset 0 0 20px rgba(0, 212, 255, 0.04);
+}
+
+/* Task info column (wraps title + badges vertically) */
+.task-info {
+  display: flex; flex-direction: column; gap: 4px;
+  min-width: 0; flex: 1;
+}
+
+/* Badges row (time + duration + timer) */
+.task-badges-row {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+}
+
+/* Time badge */
+.task-time-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 99px;
+  background: rgba(0, 212, 255, 0.12);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  color: var(--cyan, #00d4ff); font-size: 0.7rem; font-weight: 700;
+  cursor: pointer; transition: all 0.2s ease;
+}
+.task-time-badge i { font-size: 0.72rem; }
+.task-time-badge:hover {
+  background: rgba(0, 212, 255, 0.2); transform: scale(1.04);
+}
+.task-time-badge.paused {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: var(--muted, #6b7fa3); opacity: 0.65;
+}
+
+/* Duration badge */
+.task-duration-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 99px;
+  background: rgba(0, 229, 160, 0.1);
+  border: 1px solid rgba(0, 229, 160, 0.25);
+  color: var(--green, #00e5a0); font-size: 0.7rem; font-weight: 700;
+  cursor: pointer; transition: all 0.2s ease;
+}
+.task-duration-badge i { font-size: 0.72rem; }
+.task-duration-badge:hover {
+  background: rgba(0, 229, 160, 0.18); transform: scale(1.04);
+}
+
+/* Live countdown timer badge */
+.task-timer-live {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 99px;
+  background: rgba(255, 184, 0, 0.12);
+  border: 1px solid rgba(255, 184, 0, 0.35);
+  color: var(--amber, #ffb800); font-size: 0.7rem; font-weight: 800;
+  cursor: pointer; transition: all 0.2s ease;
+  animation: timerPulse 1.2s ease-in-out infinite;
+}
+.task-timer-live i { font-size: 0.78rem; }
+@keyframes timerPulse {
+  0%, 100% { box-shadow: 0 0 0 rgba(255, 184, 0, 0); }
+  50% { box-shadow: 0 0 12px rgba(255, 184, 0, 0.35); }
+}
+
+/* Right-side action buttons */
+.task-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: 12px;
+}
+
+/* On every habit card row: visible "+ Add Time" or "🕒 6:00 AM" pill */
+.habit-row-time-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 99px;
+  font-family: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.habit-row-time-pill.no-time {
+  background: rgba(0, 212, 255, 0.08);
+  border: 1px solid rgba(0, 212, 255, 0.5);
+  color: var(--cyan, #00d4ff);
+}
+
+.habit-row-time-pill.no-time:hover {
+  background: rgba(0, 212, 255, 0.2);
+  border-color: var(--cyan, #00d4ff);
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+.habit-row-time-pill.has-time {
+  background: rgba(0, 212, 255, 0.15);
+  border: 1px solid var(--cyan, #00d4ff);
+  color: var(--cyan, #00d4ff);
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.25);
+}
+
+.habit-row-time-pill.has-time:hover {
+  background: rgba(0, 212, 255, 0.26);
+  box-shadow: 0 0 16px rgba(0, 212, 255, 0.5);
+  transform: translateY(-1px);
+}
+
+.habit-row-time-pill.has-time.paused {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--muted, #6b7fa3);
+  box-shadow: none;
+}
+
+.habit-row-time-pill .pill-duration-tag {
+  background: rgba(0, 229, 160, 0.18);
+  color: var(--green, #00e5a0);
+  border: 1px solid rgba(0, 229, 160, 0.35);
+  padding: 1px 6px;
+  border-radius: 99px;
+  font-size: 0.68rem;
+  margin-left: 3px;
+}
+
+/* ── Mobile tweaks ───────────────────────────────────────────── */
+@media (max-width: 380px) {
+  .alarm-presets-grid { grid-template-columns: repeat(2, 1fr); }
+  .alarm-duration-grid { grid-template-columns: repeat(2, 1fr); }
+  .alarm-digital-clock { gap: 8px; padding: 14px 10px; }
+  .alarm-digits-display { font-size: 1.8rem; min-width: 44px; }
+  .inline-time-pill span { display: none; }
+  .inline-time-pill { padding: 5px 8px; }
+  .task-input-wrap input { padding-right: 48px; }
+}

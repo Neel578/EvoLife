@@ -7,10 +7,13 @@ import { App as CapacitorApp } from '@capacitor/app'
 
 import AppShell   from './components/AppShell'
 import AuthScreen from './components/AuthScreen'
+import { initNotificationSystem, rescheduleAllAlarms } from './utils/notificationService'
 
 function App() {
+  /** @type {[any, React.Dispatch<any>]} */
   const [user, setUser]               = useState(undefined) // undefined = loading
   const [showAuth, setShowAuth]       = useState(false)
+  /** @type {React.MutableRefObject<any>} */
   const shellRef                      = useRef(null)        // ref to AppShell's setActiveTab
 
   // Firebase Auth
@@ -19,16 +22,38 @@ function App() {
     return unsub;
   }, []);
 
+  // Initialize Native Notifications & restore alarms
+  useEffect(() => {
+    initNotificationSystem();
+    try {
+      const saved = localStorage.getItem('evoLifeTasks');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        rescheduleAllAlarms(parsed);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
   // Hardware back button — navigate to home tab; exit if already on home
   useEffect(() => {
-    const listener = CapacitorApp.addListener('backButton', () => {
-      if (shellRef.current) {
+    let removeListener = null;
+    CapacitorApp.addListener('backButton', () => {
+      if (shellRef.current && typeof shellRef.current.goHome === 'function') {
         shellRef.current.goHome();
       } else {
         CapacitorApp.exitApp();
       }
-    });
-    return () => { listener.then(l => l.remove()); };
+    }).then((l) => {
+      removeListener = () => {
+        if (l && typeof l.remove === 'function') l.remove();
+      };
+    }).catch(() => {});
+
+    return () => {
+      if (removeListener) removeListener();
+    };
   }, []);
 
   // Still loading Firebase auth state

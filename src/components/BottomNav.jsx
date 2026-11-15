@@ -1,6 +1,6 @@
 import React from 'react';
 
-/* ── Inline SVG icons (no external lib needed) ────────────────────────── */
+/* ── Inline SVG icons ─────────────────────────────────────────────────── */
 const icons = {
   home: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
@@ -49,13 +49,14 @@ const icons = {
   ),
 };
 
+/* Each tab has its own accent color */
 const TABS = [
-  { id: 0, key: 'home',     icon: icons.home,     label: 'Home'     },
-  { id: 1, key: 'wallet',   icon: icons.wallet,   label: 'Finance'  },
-  { id: 2, key: 'sparkles', icon: icons.sparkles, label: 'Mental'   },
-  { id: 3, key: 'flame',    icon: icons.flame,    label: 'Physical' },
-  { id: 4, key: 'globe',    icon: icons.globe,    label: 'Feed'     },
-  { id: 5, key: 'user',     icon: icons.user,     label: 'Profile'  },
+  { id: 0, key: 'home',     icon: icons.home,     label: 'Home',     color: '#00d4ff', bg: 'rgba(0,212,255,0.12)'    }, // cyan
+  { id: 1, key: 'wallet',   icon: icons.wallet,   label: 'Finance',  color: '#ffb800', bg: 'rgba(255,184,0,0.12)'    }, // amber
+  { id: 2, key: 'sparkles', icon: icons.sparkles, label: 'Mental',   color: '#a78bfa', bg: 'rgba(167,139,250,0.12)'  }, // purple
+  { id: 3, key: 'flame',    icon: icons.flame,    label: 'Physical', color: '#ff4d6d', bg: 'rgba(255,77,109,0.12)'   }, // red
+  { id: 4, key: 'globe',    icon: icons.globe,    label: 'Feed',     color: '#00e5a0', bg: 'rgba(0,229,160,0.12)'    }, // green
+  { id: 5, key: 'user',     icon: icons.user,     label: 'Profile',  color: '#f472b6', bg: 'rgba(244,114,182,0.12)'  }, // pink
 ];
 
 function BottomNav({ activeTab, setActiveTab }) {
@@ -71,10 +72,28 @@ function BottomNav({ activeTab, setActiveTab }) {
               aria-selected={isActive}
               aria-label={tab.label}
               className={`bnav-tab${isActive ? ' bnav-tab--active' : ''}`}
+              style={{
+                color: tab.color,
+                background: isActive ? tab.bg : 'transparent',
+                opacity: isActive ? 1 : 0.45,
+              }}
               onClick={() => setActiveTab(tab.id)}
             >
-              <span className="bnav-icon">{tab.icon}</span>
-              {isActive && <span className="bnav-pip" />}
+              <span
+                className="bnav-icon"
+                style={isActive ? {
+                  filter: `drop-shadow(0 0 8px ${tab.color}bb)`,
+                  transform: 'translateY(-2px) scale(1.12)',
+                } : {}}
+              >
+                {tab.icon}
+              </span>
+              {isActive && (
+                <span
+                  className="bnav-pip"
+                  style={{ background: tab.color, boxShadow: `0 0 8px ${tab.color}` }}
+                />
+              )}
             </button>
           );
         })}
@@ -84,3 +103,4 @@ function BottomNav({ activeTab, setActiveTab }) {
 }
 
 export default BottomNav;
+

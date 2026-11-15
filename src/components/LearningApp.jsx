@@ -1,222 +1,412 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useSyncExternalStore } from 'react';
+import { createPortal } from 'react-dom';
 
-// ---------- Reusable mobile-friendly modals ----------
-function PromptModal({ title, placeholder, confirmLabel = 'Add', onConfirm, onCancel }) {
+const emptySubscribe = () => () => {};
+
+// ---------- React Portal Wrapper to escape all parent stacking contexts ----------
+function ModalPortal({ children }) {
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+  if (!mounted || typeof document === 'undefined') return null;
+  return createPortal(children, document.body);
+}
+
+// ---------- Reusable Portal-based Modal Backdrop & Box ----------
+function ModalBackdrop({ children, onClose }) {
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
+  return (
+    <ModalPortal>
+      <div
+        className="modal-overlay"
+        onClick={onClose}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 99999,
+          background: 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '16px',
+          animation: 'fadeIn 0.2s ease both',
+        }}
+      >
+        <div
+          className="modal-box"
+          onClick={e => e.stopPropagation()}
+          style={{
+            width: '100%',
+            maxWidth: '480px',
+            background: 'var(--bg-2, #0d1526)',
+            border: '1px solid var(--glass-border, rgba(255,255,255,0.1))',
+            borderRadius: 'var(--radius-xl, 24px)',
+            padding: '28px',
+            boxShadow: '0 32px 80px rgba(0,0,0,0.7), 0 0 40px rgba(167,139,250,0.18)',
+            animation: 'scaleIn 0.25s var(--spring) both',
+            position: 'relative',
+            zIndex: 100000,
+          }}
+        >
+          {children}
+        </div>
+      </div>
+    </ModalPortal>
+  );
+}
+
+// ---------- Simple Prompt Modal (For Chapters & Topics) ----------
+function PromptModal({ title, subtitle, placeholder, confirmLabel = 'Add', onConfirm, onCancel }) {
   const [value, setValue] = useState('');
   return (
-    <div className="modal-overlay" onClick={onCancel}>
-      <div className="modal-box" onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
+    <ModalBackdrop onClose={onCancel}>
+      <div className="modal-header">
+        <div>
           <h2>{title}</h2>
-          <button className="modal-close" onClick={onCancel}><i className="ri-close-line"></i></button>
+          {subtitle && <p style={{ color: 'var(--muted)', fontSize: '0.85rem', marginTop: '4px' }}>{subtitle}</p>}
         </div>
-        <input
-          autoFocus
-          type="text"
-          placeholder={placeholder}
-          value={value}
-          onChange={e => setValue(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && value.trim() && onConfirm(value.trim())}
-          style={{ marginBottom: '16px' }}
-        />
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button className="btn-ghost" style={{ flex: 1 }} onClick={onCancel}>Cancel</button>
-          <button
-            className="btn-primary"
-            style={{ flex: 1 }}
-            disabled={!value.trim()}
-            onClick={() => value.trim() && onConfirm(value.trim())}
-          >
-            {confirmLabel}
-          </button>
-        </div>
+        <button className="modal-close" onClick={onCancel} aria-label="Close modal">
+          <i className="ri-close-line"></i>
+        </button>
       </div>
-    </div>
+      <input
+        autoFocus
+        type="text"
+        placeholder={placeholder}
+        value={value}
+        onChange={e => setValue(e.target.value)}
+        onKeyDown={e => e.key === 'Enter' && value.trim() && onConfirm(value.trim())}
+        style={{ marginBottom: '20px', fontSize: '16px' }}
+      />
+      <div style={{ display: 'flex', gap: '10px' }}>
+        <button className="btn-ghost" style={{ flex: 1 }} onClick={onCancel}>Cancel</button>
+        <button
+          className="btn-primary btn-purple"
+          style={{ flex: 1 }}
+          disabled={!value.trim()}
+          onClick={() => value.trim() && onConfirm(value.trim())}
+        >
+          {confirmLabel}
+        </button>
+      </div>
+    </ModalBackdrop>
   );
 }
 
-function ConfirmModal({ title = 'Are you sure?', message, danger = true, confirmLabel = 'Delete', onConfirm, onCancel }) {
+// ---------- Confirm Deletion Modal ----------
+function ConfirmModal({ title = 'Are you sure?', message, confirmLabel = 'Delete', onConfirm, onCancel }) {
   return (
-    <div className="modal-overlay" onClick={onCancel}>
-      <div className="modal-box" onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>{title}</h2>
-          <button className="modal-close" onClick={onCancel}><i className="ri-close-line"></i></button>
-        </div>
-        {message && <p style={{ color: 'var(--muted)', marginBottom: '20px', fontSize: '0.9rem' }}>{message}</p>}
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button className="btn-ghost" style={{ flex: 1 }} onClick={onCancel}>Cancel</button>
-          <button
-            className={danger ? 'btn-primary btn-red' : 'btn-primary'}
-            style={{ flex: 1 }}
-            onClick={onConfirm}
-          >
-            {confirmLabel}
-          </button>
-        </div>
+    <ModalBackdrop onClose={onCancel}>
+      <div className="modal-header">
+        <h2>{title}</h2>
+        <button className="modal-close" onClick={onCancel} aria-label="Close modal">
+          <i className="ri-close-line"></i>
+        </button>
       </div>
-    </div>
+      {message && <p style={{ color: 'var(--muted)', marginBottom: '24px', fontSize: '0.9rem', lineHeight: 1.5 }}>{message}</p>}
+      <div style={{ display: 'flex', gap: '10px' }}>
+        <button className="btn-ghost" style={{ flex: 1 }} onClick={onCancel}>Cancel</button>
+        <button
+          className="btn-primary btn-red"
+          style={{ flex: 1 }}
+          onClick={onConfirm}
+        >
+          {confirmLabel}
+        </button>
+      </div>
+    </ModalBackdrop>
   );
 }
 
-// Type picker for "Add" menu -> feeds into PromptModal
-const TYPE_LABELS = {
-  'Study Planning': { title: 'New Study Course', placeholder: 'e.g. React Fundamentals' },
-  'Project Planning': { title: 'New Project Board', placeholder: 'e.g. App Launch Plan' },
-};
+// ---------- Dedicated Add Study Course Modal ----------
+const COURSE_CATEGORIES = ['Technology', 'Academics', 'Language', 'Science', 'Business', 'General'];
 
+function AddCourseModal({ onConfirm, onCancel }) {
+  const [title, setTitle] = useState('');
+  const [category, setCategory] = useState('Technology');
+  const [goal, setGoal] = useState('');
+
+  const handleSubmit = (e) => {
+    e?.preventDefault();
+    if (!title.trim()) return;
+    onConfirm({
+      title: title.trim(),
+      category,
+      goal: goal.trim(),
+    });
+  };
+
+  return (
+    <ModalBackdrop onClose={onCancel}>
+      <div className="modal-header" style={{ marginBottom: '18px' }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '10px',
+              background: 'var(--purple-dim, rgba(167,139,250,0.15))',
+              color: 'var(--purple, #a78bfa)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '1.1rem'
+            }}>
+              <i className="ri-book-read-line"></i>
+            </span>
+            <h2>New Study Course</h2>
+          </div>
+          <p style={{ color: 'var(--muted)', fontSize: '0.85rem', marginTop: '4px' }}>
+            Add a course or subject to track your study goals.
+          </p>
+        </div>
+        <button className="modal-close" onClick={onCancel} aria-label="Close modal">
+          <i className="ri-close-line"></i>
+        </button>
+      </div>
+
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div>
+          <label className="label" style={{ marginBottom: '6px', display: 'block' }}>Course / Subject Title</label>
+          <input
+            autoFocus
+            type="text"
+            placeholder="e.g. React & TypeScript, Calculus I, Spanish B1"
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            style={{ fontSize: '16px' }}
+            required
+          />
+        </div>
+
+        <div>
+          <label className="label" style={{ marginBottom: '8px', display: 'block' }}>Category</label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            {COURSE_CATEGORIES.map(cat => {
+              const isSelected = category === cat;
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setCategory(cat)}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '99px',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    border: isSelected ? '1px solid var(--purple)' : '1px solid var(--glass-border)',
+                    background: isSelected ? 'var(--purple-dim, rgba(167,139,250,0.18))' : 'var(--glass)',
+                    color: isSelected ? 'var(--purple, #a78bfa)' : 'var(--muted)',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  {cat}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div>
+          <label className="label" style={{ marginBottom: '6px', display: 'block' }}>Goal or Notes (Optional)</label>
+          <input
+            type="text"
+            placeholder="e.g. Finish 10 chapters by end of month"
+            value={goal}
+            onChange={e => setGoal(e.target.value)}
+            style={{ fontSize: '15px' }}
+          />
+        </div>
+
+        <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+          <button type="button" className="btn-ghost" style={{ flex: 1 }} onClick={onCancel}>
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="btn-primary btn-purple"
+            style={{ flex: 1 }}
+            disabled={!title.trim()}
+          >
+            Create Course
+          </button>
+        </div>
+      </form>
+    </ModalBackdrop>
+  );
+}
+
+// ---------- Main Mental Growth Component ----------
 function LearningApp() {
   const [courses, setCourses] = useState(() => {
     const s = localStorage.getItem('evoLifeLearning');
-    return s ? JSON.parse(s) : [];
+    if (!s) return [];
+    try {
+      const parsed = JSON.parse(s);
+      // Filter out legacy "Project Planning" items so only study courses remain
+      return Array.isArray(parsed) ? parsed.filter(c => c.type !== 'Project Planning') : [];
+    } catch {
+      return [];
+    }
   });
-  const [view, setView] = useState('dashboard');
-  const [active, setActive] = useState(null);
-  const [showAddMenu, setShowAddMenu] = useState(false);
-  const [activeTool, setActiveTool] = useState('cursor');
-  const [dragNode, setDragNode] = useState(null);
-  const [connectStart, setConnectStart] = useState(null);
-  const fileRef = useRef(null);
-  const lastPos = useRef({ x: 0, y: 0 });
 
-  // Modal state (replaces prompt()/confirm())
-  const [promptModal, setPromptModal] = useState(null); // { title, placeholder, confirmLabel, onConfirm }
-  const [confirmModal, setConfirmModal] = useState(null); // { message, onConfirm }
+  const [view, setView] = useState('dashboard'); // 'dashboard' | 'course'
+  const [activeCourseId, setActiveCourseId] = useState(null);
+  const [showAddCourseModal, setShowAddCourseModal] = useState(false);
 
-  useEffect(() => { localStorage.setItem('evoLifeLearning', JSON.stringify(courses)); }, [courses]);
+  // Modal states for chapter/topic/deletion
+  const [promptModal, setPromptModal] = useState(null);
+  const [confirmModal, setConfirmModal] = useState(null);
 
-  const createNew = type => {
-    setShowAddMenu(false);
-    const { title, placeholder } = TYPE_LABELS[type];
-    setPromptModal({
-      title, placeholder, confirmLabel: 'Create',
-      onConfirm: (name) => {
-        const item = {
-          id: Date.now(), title: name, type,
-          chapters: type === 'Study Planning' ? [] : undefined,
-          boardNodes: type === 'Project Planning' ? [] : undefined,
-          boardConnections: type === 'Project Planning' ? [] : undefined,
-        };
-        setCourses(prev => [item, ...prev]);
-        setPromptModal(null);
-      }
-    });
+  useEffect(() => {
+    localStorage.setItem('evoLifeLearning', JSON.stringify(courses));
+  }, [courses]);
+
+  const activeCourse = courses.find(c => c.id === activeCourseId);
+
+  // Create course handler
+  const handleCreateCourse = ({ title, category, goal }) => {
+    const newCourse = {
+      id: Date.now(),
+      title,
+      category: category || 'Technology',
+      goal: goal || '',
+      type: 'Study Planning',
+      chapters: [],
+      createdAt: new Date().toISOString()
+    };
+    setCourses(prev => [newCourse, ...prev]);
+    setShowAddCourseModal(false);
   };
 
-  const deleteCourse = (id, e) => {
-    e.stopPropagation();
+  // Delete course handler
+  const handleDeleteCourse = (id, e) => {
+    e?.stopPropagation();
     setConfirmModal({
-      message: 'This course or board will be permanently deleted.',
-      onConfirm: () => { setCourses(prev => prev.filter(c => c.id !== id)); setConfirmModal(null); }
+      title: 'Delete Course?',
+      message: 'This course and all its chapters will be permanently removed.',
+      onConfirm: () => {
+        setCourses(prev => prev.filter(c => c.id !== id));
+        if (activeCourseId === id) {
+          setView('dashboard');
+          setActiveCourseId(null);
+        }
+        setConfirmModal(null);
+      }
     });
   };
 
-  const openItem = c => {
-    // Avoid mutating state directly
-    const withConns = (c.type === 'Project Planning' && !c.boardConnections) ? { ...c, boardConnections: [] } : c;
-    setActive(withConns);
-    setView(c.type === 'Study Planning' ? 'course' : 'board');
+  // Open course handler
+  const handleOpenCourse = (c) => {
+    setActiveCourseId(c.id);
+    setView('course');
   };
 
-  // Study handlers
-  const addChapter = () => {
+  // Calculate course progress
+  const calcProg = (c) => {
+    if (!c?.chapters || c.chapters.length === 0) return 0;
+    let tot = 0, done = 0;
+    c.chapters.forEach(ch => {
+      tot += ch.topics.length;
+      done += ch.topics.filter(t => t.completed).length;
+    });
+    return tot === 0 ? 0 : Math.round((done / tot) * 100);
+  };
+
+  // Chapter handlers
+  const handleAddChapter = () => {
     setPromptModal({
-      title: 'New Chapter', placeholder: 'Chapter name', confirmLabel: 'Add',
+      title: 'New Chapter',
+      subtitle: 'Organize your topics into study modules',
+      placeholder: 'e.g. Chapter 1: Foundations',
+      confirmLabel: 'Add Chapter',
       onConfirm: (name) => {
-        setCourses(prev => prev.map(c => c.id === active.id
+        setCourses(prev => prev.map(c => c.id === activeCourseId
           ? { ...c, chapters: [...c.chapters, { id: Date.now(), title: name, topics: [] }] }
-          : c));
+          : c
+        ));
         setPromptModal(null);
       }
     });
   };
-  const addTopic = cId => {
+
+  const handleDeleteChapter = (chapterId, e) => {
+    e?.stopPropagation();
+    setConfirmModal({
+      title: 'Delete Chapter?',
+      message: 'This chapter and its topics will be removed from the course.',
+      onConfirm: () => {
+        setCourses(prev => prev.map(c => c.id === activeCourseId
+          ? { ...c, chapters: c.chapters.filter(ch => ch.id !== chapterId) }
+          : c
+        ));
+        setConfirmModal(null);
+      }
+    });
+  };
+
+  // Topic handlers
+  const handleAddTopic = (chapterId) => {
     setPromptModal({
-      title: 'New Topic', placeholder: 'Topic name', confirmLabel: 'Add',
+      title: 'New Topic',
+      subtitle: 'Add a topic or lesson to study',
+      placeholder: 'e.g. Async / Await and Promises',
+      confirmLabel: 'Add Topic',
       onConfirm: (name) => {
-        setCourses(prev => prev.map(c => c.id !== active.id ? c : {
+        setCourses(prev => prev.map(c => c.id !== activeCourseId ? c : {
           ...c,
-          chapters: c.chapters.map(ch => ch.id === cId
+          chapters: c.chapters.map(ch => ch.id === chapterId
             ? { ...ch, topics: [...ch.topics, { id: Date.now(), title: name, completed: false }] }
-            : ch)
+            : ch
+          )
         }));
         setPromptModal(null);
       }
     });
   };
-  const toggleTopic = (cId, tId) => {
-    setCourses(courses.map(c => c.id !== active.id ? c : { ...c, chapters: c.chapters.map(ch => ch.id !== cId ? ch : { ...ch, topics: ch.topics.map(t => t.id === tId ? { ...t, completed: !t.completed } : t) }) }));
-  };
-  const calcProg = c => {
-    if (!c?.chapters) return 0;
-    let tot = 0, done = 0;
-    c.chapters.forEach(ch => { tot += ch.topics.length; done += ch.topics.filter(t => t.completed).length; });
-    return tot === 0 ? 0 : Math.round((done / tot) * 100);
+
+  const handleToggleTopic = (chapterId, topicId) => {
+    setCourses(prev => prev.map(c => c.id !== activeCourseId ? c : {
+      ...c,
+      chapters: c.chapters.map(ch => ch.id !== chapterId ? ch : {
+        ...ch,
+        topics: ch.topics.map(t => t.id === topicId ? { ...t, completed: !t.completed } : t)
+      })
+    }));
   };
 
-  // Board handlers
-  const updateBoard = (nodes, conns) => {
-    const upd = { ...active, boardNodes: nodes, boardConnections: conns };
-    setActive(upd);
-    setCourses(courses.map(c => c.id === active.id ? upd : c));
+  const handleDeleteTopic = (chapterId, topicId, e) => {
+    e?.stopPropagation();
+    setCourses(prev => prev.map(c => c.id !== activeCourseId ? c : {
+      ...c,
+      chapters: c.chapters.map(ch => ch.id !== chapterId ? ch : {
+        ...ch,
+        topics: ch.topics.filter(t => t.id !== topicId)
+      })
+    }));
   };
 
-  const handleBoardClick = e => {
-    if (e.target.id !== 'board-cv') { if (activeTool === 'connect') setConnectStart(null); return; }
-    if (activeTool === 'note') {
-      const r = e.currentTarget.getBoundingClientRect();
-      const px = (e.clientX ?? (e.touches && e.touches[0].clientX)) - r.left;
-      const py = (e.clientY ?? (e.touches && e.touches[0].clientY)) - r.top;
-      const n = { id: Date.now(), type: 'note', x: px, y: py, width: 180, height: 100, content: 'New note...' };
-      updateBoard([...active.boardNodes, n], active.boardConnections);
-      setActiveTool('cursor');
-    } else if (activeTool === 'connect') setConnectStart(null);
-  };
-
-  const handleNodeTap = (e, id) => {
-    e.stopPropagation();
-    if (activeTool === 'delete') {
-      updateBoard(active.boardNodes.filter(n => n.id !== id), (active.boardConnections || []).filter(c => c.from !== id && c.to !== id));
-    } else if (activeTool === 'connect') {
-      if (!connectStart) setConnectStart(id);
-      else if (connectStart !== id) { updateBoard(active.boardNodes, [...(active.boardConnections || []), { from: connectStart, to: id }]); setConnectStart(null); }
-    }
-  };
-
-  // --- Pointer-based drag (works for mouse AND touch) ---
-  const handleNodePointerDown = (e, id) => {
-    if (activeTool !== 'cursor') return;
-    e.stopPropagation();
-    e.currentTarget.setPointerCapture(e.pointerId);
-    lastPos.current = { x: e.clientX, y: e.clientY };
-    setDragNode(id);
-  };
-  const handleBoardPointerMove = e => {
-    if (activeTool !== 'cursor' || dragNode === null) return;
-    const dx = e.clientX - lastPos.current.x;
-    const dy = e.clientY - lastPos.current.y;
-    lastPos.current = { x: e.clientX, y: e.clientY };
-    updateBoard(active.boardNodes.map(n => n.id === dragNode ? { ...n, x: n.x + dx, y: n.y + dy } : n), active.boardConnections);
-  };
-  const endDrag = () => setDragNode(null);
-
-  const handleImgUpload = e => {
-    const file = e.target.files[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const n = { id: Date.now(), type: 'image', x: 50, y: 50, width: 220, height: 180, content: reader.result };
-      updateBoard([...active.boardNodes, n], active.boardConnections);
-    };
-    reader.readAsDataURL(file);
-    setActiveTool('cursor');
-  };
-
-  // Shared modal renderer — mounted once, used across all views
-  const Modals = () => (
+  // Modals Container
+  const renderModals = () => (
     <>
+      {showAddCourseModal && (
+        <AddCourseModal
+          onConfirm={handleCreateCourse}
+          onCancel={() => setShowAddCourseModal(false)}
+        />
+      )}
       {promptModal && (
         <PromptModal
           title={promptModal.title}
+          subtitle={promptModal.subtitle}
           placeholder={promptModal.placeholder}
           confirmLabel={promptModal.confirmLabel}
           onConfirm={promptModal.onConfirm}
@@ -225,6 +415,7 @@ function LearningApp() {
       )}
       {confirmModal && (
         <ConfirmModal
+          title={confirmModal.title}
           message={confirmModal.message}
           onConfirm={confirmModal.onConfirm}
           onCancel={() => setConfirmModal(null)}
@@ -233,233 +424,300 @@ function LearningApp() {
     </>
   );
 
-  // DASHBOARD
-  if (view === 'dashboard') return (
-    <div className="screen">
-      <div className="app-wrap">
-        <div className="app-header animate-fadeUp">
-          <div className="app-header-left">
-            <div className="app-title-block">
-              <h1 className="display grad-purple">Mental Growth</h1>
-              <p>Learning & Projects</p>
-            </div>
-          </div>
-          <div className="app-header-right" style={{ position: 'relative' }}>
-            <button className="btn-primary btn-sm" style={{ width: 'auto' }} onClick={() => setShowAddMenu(v => !v)}>
-              <i className="ri-add-line"></i> Add
-            </button>
-            {showAddMenu && (
-              <div className="card animate-scaleIn" style={{ position: 'absolute', right: 0, top: '48px', padding: '12px', width: '190px', zIndex: 100, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <button className="btn-ghost btn-sm" style={{ minHeight: 44, justifyContent: 'flex-start' }} onClick={() => createNew('Study Planning')}><i className="ri-book-read-line"></i> Study Course</button>
-                <button className="btn-ghost btn-sm" style={{ minHeight: 44, justifyContent: 'flex-start' }} onClick={() => createNew('Project Planning')}><i className="ri-layout-masonry-line"></i> Project Board</button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {courses.length === 0 ? (
-          <div className="empty-state card" style={{ padding: '48px 20px' }}>
-            <i className="ri-book-open-line"></i>
-            <p>No courses or projects yet.</p>
-            <p style={{ marginTop: '6px', fontSize: '0.8rem' }}>Tap "Add" to get started!</p>
-          </div>
-        ) : (
-          <div className="course-grid animate-fadeUp">
-            {courses.map((c, i) => {
-              const prog = calcProg(c);
-              return (
-                <div key={c.id} className="course-card" style={{ animationDelay: `${i * 60}ms` }} onClick={() => openItem(c)}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
-                    <span className={`chip ${c.type === 'Study Planning' ? 'chip-cyan' : 'chip-green'}`}>
-                      <i className={c.type === 'Study Planning' ? 'ri-book-read-line' : 'ri-layout-masonry-line'}></i>
-                      {c.type === 'Study Planning' ? 'Course' : 'Board'}
-                    </span>
-                    <button className="icon-btn-touch" onClick={e => deleteCourse(c.id, e)}>
-                      <i className="ri-delete-bin-line"></i>
-                    </button>
-                  </div>
-                  <div className="course-title">{c.title}</div>
-                  {c.type === 'Study Planning' && (
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--muted)', marginBottom: '5px' }}>
-                        <span>Progress</span><span style={{ color: 'var(--cyan)', fontWeight: 700 }}>{prog}%</span>
-                      </div>
-                      <div className="progress-track"><div className="progress-fill" style={{ width: `${prog}%` }}></div></div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-      <Modals />
-    </div>
-  );
-
-  // COURSE VIEW
-  if (view === 'course') {
-    const course = courses.find(c => c.id === active.id);
-    const prog = calcProg(course);
+  // ── DASHBOARD VIEW ─────────────────────────────────────────
+  if (view === 'dashboard') {
     return (
       <div className="screen">
         <div className="app-wrap">
+          {/* Header */}
           <div className="app-header animate-fadeUp">
             <div className="app-header-left">
-              <button className="back-btn" onClick={() => setView('dashboard')}>
-                <i className="ri-arrow-left-line"></i> Dashboard
-              </button>
               <div className="app-title-block">
-                <h1 className="display" style={{ fontSize: 'clamp(1.3rem, 5vw, 1.8rem)' }}>{course.title}</h1>
+                <h1 className="display grad-purple">Mental Growth</h1>
+                <p>Study & Learning</p>
               </div>
             </div>
             <div className="app-header-right">
-              <button className="btn-primary btn-sm" style={{ width: 'auto' }} onClick={addChapter}>
-                <i className="ri-add-line"></i> Chapter
+              <button
+                className="btn-primary btn-purple btn-sm"
+                style={{ width: 'auto', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                onClick={() => setShowAddCourseModal(true)}
+              >
+                <i className="ri-add-line"></i> + Add
               </button>
             </div>
           </div>
 
-          <div className="card" style={{ padding: '16px', marginBottom: '20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', color: 'var(--cyan)', fontWeight: 700, marginBottom: '8px' }}>
-              <span>Course Progress</span><span>{prog}%</span>
-            </div>
-            <div className="progress-track" style={{ height: '10px' }}><div className="progress-fill" style={{ width: `${prog}%` }}></div></div>
-          </div>
-
-          {course.chapters.length === 0
-            ? <div className="empty-state card" style={{ padding: '40px' }}><i className="ri-folder-open-line"></i><p>No chapters yet. Add one!</p></div>
-            : course.chapters.map(ch => (
-              <div key={ch.id} className="card chapter-box animate-fadeUp">
-                <div className="chapter-head">
-                  <h3>{ch.title}</h3>
-                  <button className="btn-ghost btn-sm" style={{ minHeight: 40 }} onClick={() => addTopic(ch.id)}><i className="ri-add-line"></i> Topic</button>
-                </div>
-                {ch.topics.length === 0
-                  ? <div style={{ color: 'var(--muted)', fontSize: '0.85rem', textAlign: 'center', padding: '16px' }}>No topics yet.</div>
-                  : ch.topics.map(t => (
-                    <div key={t.id} className="topic-row">
-                      <label style={{ minHeight: 44, display: 'flex', alignItems: 'center' }}>
-                        <input type="checkbox" checked={t.completed} onChange={() => toggleTopic(ch.id, t.id)} style={{ width: 20, height: 20 }} />
-                        <span style={{ textDecoration: t.completed ? 'line-through' : 'none', opacity: t.completed ? 0.5 : 1 }}>{t.title}</span>
-                      </label>
-                      {t.completed && <span className="chip chip-green" style={{ fontSize: '0.65rem' }}><i className="ri-check-line"></i></span>}
-                    </div>
-                  ))
-                }
+          {/* Course List or Empty State */}
+          {courses.length === 0 ? (
+            <div
+              className="empty-state card animate-fadeUp"
+              style={{ padding: '48px 20px', cursor: 'pointer', textAlign: 'center' }}
+              onClick={() => setShowAddCourseModal(true)}
+            >
+              <div style={{
+                width: '64px',
+                height: '64px',
+                borderRadius: '20px',
+                background: 'var(--purple-dim, rgba(167,139,250,0.12))',
+                color: 'var(--purple, #a78bfa)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '2rem',
+                margin: '0 auto 16px',
+                border: '1px solid rgba(167,139,250,0.25)'
+              }}>
+                <i className="ri-book-open-line"></i>
               </div>
-            ))
-          }
+              <p style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-h, #f0f4ff)' }}>
+                No courses or study goals yet.
+              </p>
+              <p style={{ marginTop: '6px', fontSize: '0.85rem', color: 'var(--muted, #6b7fa3)' }}>
+                Tap "+ Add" to get started!
+              </p>
+              <button
+                className="btn-primary btn-purple btn-sm"
+                style={{ marginTop: '18px', display: 'inline-flex', width: 'auto', marginInline: 'auto' }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowAddCourseModal(true);
+                }}
+              >
+                <i className="ri-add-line"></i> + Add Course
+              </button>
+            </div>
+          ) : (
+            <div className="course-grid animate-fadeUp">
+              {courses.map((c, i) => {
+                const prog = calcProg(c);
+                const totalTopics = c.chapters.reduce((sum, ch) => sum + ch.topics.length, 0);
+                const doneTopics = c.chapters.reduce((sum, ch) => sum + ch.topics.filter(t => t.completed).length, 0);
+
+                return (
+                  <div
+                    key={c.id}
+                    className="course-card"
+                    style={{ animationDelay: `${i * 60}ms` }}
+                    onClick={() => handleOpenCourse(c)}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                      <span className="chip chip-purple" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                        <i className="ri-book-read-line"></i>
+                        {c.category || 'Study Course'}
+                      </span>
+                      <button
+                        className="icon-btn-touch"
+                        style={{ color: 'var(--muted)', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                        onClick={e => handleDeleteCourse(c.id, e)}
+                        title="Delete course"
+                      >
+                        <i className="ri-delete-bin-line"></i>
+                      </button>
+                    </div>
+
+                    <div>
+                      <div className="course-title" style={{ fontSize: '1.1rem', marginBottom: '4px' }}>{c.title}</div>
+                      {c.goal && (
+                        <p style={{ fontSize: '0.78rem', color: 'var(--muted)', marginBottom: '8px' }}>
+                          {c.goal}
+                        </p>
+                      )}
+                    </div>
+
+                    <div style={{ marginTop: 'auto' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--muted)', marginBottom: '6px' }}>
+                        <span>{doneTopics}/{totalTopics} topics</span>
+                        <span style={{ color: 'var(--purple)', fontWeight: 700 }}>{prog}%</span>
+                      </div>
+                      <div className="progress-track" style={{ height: '7px' }}>
+                        <div
+                          className="progress-fill"
+                          style={{
+                            width: `${prog}%`,
+                            background: 'linear-gradient(90deg, var(--purple, #a78bfa), var(--cyan, #00d4ff))'
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
-        <Modals />
+        {renderModals()}
       </div>
     );
   }
 
-  // BOARD VIEW
-  const tools = [
-    { id: 'cursor', icon: '👆', label: 'Move' },
-    { id: 'note', icon: '📝', label: 'Note' },
-    { id: 'connect', icon: '🔗', label: 'Connect' },
-    { id: 'image', icon: '🖼️', label: 'Image' },
-    { id: 'delete', icon: '🗑️', label: 'Delete' },
-  ];
+  // ── COURSE DETAIL VIEW ─────────────────────────────────────
+  if (view === 'course' && activeCourse) {
+    const prog = calcProg(activeCourse);
+    const totalTopics = activeCourse.chapters.reduce((sum, ch) => sum + ch.topics.length, 0);
+    const doneTopics = activeCourse.chapters.reduce((sum, ch) => sum + ch.topics.filter(t => t.completed).length, 0);
 
-  return (
-    <div className="screen">
-      <div className="app-wrap">
-        <div className="app-header animate-fadeUp">
-          <div className="app-header-left">
-            <button className="back-btn" onClick={() => setView('dashboard')}>
-              <i className="ri-arrow-left-line"></i> Dashboard
-            </button>
-            <div className="app-title-block">
-              <h1 className="display" style={{ fontSize: 'clamp(1.2rem, 4vw, 1.7rem)' }}>{active.title}</h1>
+    return (
+      <div className="screen">
+        <div className="app-wrap">
+          {/* Header */}
+          <div className="app-header animate-fadeUp">
+            <div className="app-header-left">
+              <button
+                className="back-btn"
+                onClick={() => setView('dashboard')}
+                style={{ cursor: 'pointer' }}
+              >
+                <i className="ri-arrow-left-line"></i> Dashboard
+              </button>
+              <div className="app-title-block">
+                <h1 className="display" style={{ fontSize: 'clamp(1.3rem, 5vw, 1.8rem)' }}>
+                  {activeCourse.title}
+                </h1>
+                {activeCourse.category && (
+                  <p style={{ color: 'var(--purple)', fontWeight: 600 }}>{activeCourse.category}</p>
+                )}
+              </div>
+            </div>
+            <div className="app-header-right">
+              <button
+                className="btn-primary btn-purple btn-sm"
+                style={{ width: 'auto', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                onClick={handleAddChapter}
+              >
+                <i className="ri-add-line"></i> + Chapter
+              </button>
             </div>
           </div>
-        </div>
 
-        <div className="card board-toolbar">
-          {tools.map(t => (
-            <button
-              key={t.id}
-              className={`tool-btn ${activeTool === t.id ? (t.id === 'delete' ? 'active-delete' : t.id === 'connect' ? 'active-connect' : 'active') : ''}`}
-              style={{ minHeight: 44, minWidth: 44 }}
-              onClick={() => { if (t.id === 'image') fileRef.current.click(); else { setActiveTool(t.id); setConnectStart(null); } }}
-            >{t.icon} {t.label}</button>
-          ))}
-          <input type="file" accept="image/*" ref={fileRef} onChange={handleImgUpload} style={{ display: 'none' }} />
-        </div>
-
-        {connectStart && (
-          <div className="chip chip-green animate-fadeIn" style={{ marginBottom: '12px', display: 'inline-flex' }}>
-            <i className="ri-focus-3-line"></i> Node selected — tap another to connect
+          {/* Progress Card */}
+          <div className="card animate-fadeUp" style={{ padding: '20px', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <span style={{ fontSize: '0.85rem', color: 'var(--muted)', fontWeight: 600 }}>
+                Course Completion ({doneTopics} of {totalTopics} topics)
+              </span>
+              <span style={{ fontSize: '1rem', color: 'var(--purple)', fontWeight: 800 }}>
+                {prog}%
+              </span>
+            </div>
+            <div className="progress-track" style={{ height: '10px' }}>
+              <div
+                className="progress-fill"
+                style={{
+                  width: `${prog}%`,
+                  background: 'linear-gradient(90deg, var(--purple, #a78bfa), var(--cyan, #00d4ff))'
+                }}
+              ></div>
+            </div>
           </div>
-        )}
 
-        <div
-          id="board-cv"
-          className="board-canvas"
-          onClick={handleBoardClick}
-          onPointerMove={handleBoardPointerMove}
-          onPointerUp={endDrag}
-          onPointerCancel={endDrag}
-          onPointerLeave={endDrag}
-          style={{
-            cursor: activeTool === 'note' || activeTool === 'connect' ? 'crosshair' : 'default',
-            touchAction: activeTool === 'cursor' ? 'none' : 'pan-y', // prevent page scroll fighting drags
-          }}
-        >
-          {/* SVG connections */}
-          <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 5 }}>
-            {(active.boardConnections || []).map((conn, i) => {
-              const s = active.boardNodes.find(n => n.id === conn.from);
-              const e = active.boardNodes.find(n => n.id === conn.to);
-              if (!s || !e) return null;
-              const x1 = s.x + (s.width || 180) / 2, y1 = s.y + (s.height || 100) / 2;
-              const x2 = e.x + (e.width || 180) / 2, y2 = e.y + (e.height || 100) / 2;
-              return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--green)" strokeWidth="2.5" strokeDasharray="6,5" opacity="0.8" />;
-            })}
-          </svg>
-
-          {/* Nodes */}
-          {(active.boardNodes || []).map(node => (
+          {/* Chapters List */}
+          {activeCourse.chapters.length === 0 ? (
             <div
-              key={node.id}
-              className="board-node"
-              onPointerDown={e => handleNodePointerDown(e, node.id)}
-              onClick={e => handleNodeTap(e, node.id)}
-              onPointerUp={endDrag}
-              style={{
-                left: node.x, top: node.y, width: node.width || 180, height: node.height || 100,
-                border: `2px solid ${connectStart === node.id ? 'var(--green)' : node.type === 'image' ? 'var(--green)' : 'var(--cyan)'}`,
-                padding: node.type === 'image' ? '0' : '16px',
-                boxShadow: dragNode === node.id ? '0 24px 48px rgba(0,0,0,0.6)' : '0 12px 32px rgba(0,0,0,0.4)',
-                cursor: activeTool === 'delete' ? 'no-drop' : activeTool === 'connect' ? 'pointer' : (dragNode === node.id ? 'grabbing' : 'grab'),
-                resize: activeTool === 'cursor' ? 'both' : 'none',
-                zIndex: dragNode === node.id ? 200 : connectStart === node.id ? 150 : 10,
-                touchAction: 'none', // node itself never scrolls the page
-              }}
+              className="empty-state card animate-fadeUp"
+              style={{ padding: '40px 20px', cursor: 'pointer' }}
+              onClick={handleAddChapter}
             >
-              {node.type === 'note'
-                ? <div contentEditable suppressContentEditableWarning onBlur={e => updateBoard(active.boardNodes.map(n => n.id === node.id ? { ...n, content: e.target.innerText } : n), active.boardConnections)}
-                    style={{ outline: 'none', width: '100%', height: '100%', fontSize: '0.88rem', fontWeight: 500 }}>{node.content}</div>
-                : <img src={node.content} alt="" draggable="false" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px', pointerEvents: 'none' }} />
-              }
+              <i className="ri-folder-add-line"></i>
+              <p style={{ fontWeight: 700 }}>No chapters added yet.</p>
+              <p style={{ marginTop: '6px', fontSize: '0.82rem', color: 'var(--muted)' }}>
+                Tap "+ Chapter" above to create your first module.
+              </p>
             </div>
-          ))}
+          ) : (
+            activeCourse.chapters.map(ch => (
+              <div key={ch.id} className="card chapter-box animate-fadeUp" style={{ marginBottom: '16px' }}>
+                <div className="chapter-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>{ch.title}</h3>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <button
+                      className="btn-ghost btn-sm"
+                      style={{ minHeight: 36, padding: '6px 12px' }}
+                      onClick={() => handleAddTopic(ch.id)}
+                    >
+                      <i className="ri-add-line"></i> Topic
+                    </button>
+                    <button
+                      className="icon-btn-touch"
+                      style={{ color: 'var(--muted)', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                      onClick={e => handleDeleteChapter(ch.id, e)}
+                      title="Delete chapter"
+                    >
+                      <i className="ri-delete-bin-line"></i>
+                    </button>
+                  </div>
+                </div>
 
-          {(active.boardNodes || []).length === 0 && (
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)', fontSize: '0.9rem', pointerEvents: 'none', flexDirection: 'column', gap: '8px' }}>
-              <i className="ri-layout-masonry-line" style={{ fontSize: '2rem', opacity: 0.3 }}></i>
-              <span>Select 📝 Note and tap to add</span>
-            </div>
+                {ch.topics.length === 0 ? (
+                  <div
+                    style={{ color: 'var(--muted)', fontSize: '0.85rem', textAlign: 'center', padding: '16px', cursor: 'pointer' }}
+                    onClick={() => handleAddTopic(ch.id)}
+                  >
+                    No topics yet. Tap "+ Topic" to add one!
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '12px' }}>
+                    {ch.topics.map(t => (
+                      <div
+                        key={t.id}
+                        className="topic-row"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '10px 14px',
+                          borderRadius: 'var(--radius-md, 12px)',
+                          background: t.completed ? 'rgba(0, 229, 160, 0.05)' : 'var(--glass)',
+                          border: `1px solid ${t.completed ? 'rgba(0, 229, 160, 0.2)' : 'var(--glass-border)'}`,
+                          transition: 'all 0.2s ease',
+                        }}
+                      >
+                        <label style={{ minHeight: 36, display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', flex: 1 }}>
+                          <input
+                            type="checkbox"
+                            checked={t.completed}
+                            onChange={() => handleToggleTopic(ch.id, t.id)}
+                            style={{ width: 18, height: 18, accentColor: 'var(--purple)', cursor: 'pointer' }}
+                          />
+                          <span style={{
+                            fontSize: '0.92rem',
+                            fontWeight: 500,
+                            textDecoration: t.completed ? 'line-through' : 'none',
+                            opacity: t.completed ? 0.6 : 1,
+                            color: t.completed ? 'var(--green, #00e5a0)' : 'var(--text-h, #f0f4ff)'
+                          }}>
+                            {t.title}
+                          </span>
+                        </label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {t.completed && (
+                            <span className="chip chip-green" style={{ fontSize: '0.65rem', padding: '2px 8px' }}>
+                              <i className="ri-check-line"></i> Done
+                            </span>
+                          )}
+                          <button
+                            className="icon-btn-touch"
+                            style={{ color: 'var(--muted)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px' }}
+                            onClick={e => handleDeleteTopic(ch.id, t.id, e)}
+                            title="Delete topic"
+                          >
+                            <i className="ri-close-line" style={{ fontSize: '1.1rem' }}></i>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))
           )}
         </div>
+        {renderModals()}
       </div>
-      <Modals />
-    </div>
-  );
+    );
+  }
+
+  return null;
 }
 
-export default LearningApp;
+export default LearningApp;

@@ -908,3 +908,189 @@ input::placeholder { color: var(--muted); }
 .goal-setup { text-align: center; padding: var(--sp-8) var(--sp-5); max-width: 400px; margin: var(--sp-8) auto 0; }
 .goal-setup h2 { margin-bottom: var(--sp-2); }
 .goal-setup p { margin-bottom: var(--sp-4); font-size: var(--fs-sm); }
+
+/* ============================================================
+   Daily Focus: Always-Visible Inline Timer & Alarm Controls
+   ============================================================ */
+
+.task-add-row-v2 {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.task-input-wrap {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.task-input-wrap input {
+  width: 100%;
+  padding-right: 140px !important;
+}
+
+/* Inside the right side of the "Add a new habit..." input box:
+   visible cyan-outlined pill button */
+.inline-time-pill {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 99px;
+  background: rgba(0, 212, 255, 0.12);
+  border: 1px solid var(--cyan, #00d4ff);
+  color: var(--cyan, #00d4ff);
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.25);
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 2;
+}
+
+.inline-time-pill:hover {
+  background: rgba(0, 212, 255, 0.24);
+  border-color: #5ce1e6;
+  box-shadow: 0 0 15px rgba(0, 212, 255, 0.45);
+  transform: translateY(-50%) scale(1.03);
+}
+
+.inline-time-pill.has-time {
+  background: rgba(0, 212, 255, 0.18);
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.35);
+}
+
+/* Habit card actions container */
+.task-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: 12px;
+}
+
+/* On every habit card row: visible "+ Add Time" or "🕒 6:00 AM" pill */
+.habit-row-time-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 99px;
+  font-family: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* When habit has NO time: visible "+ Add Time" cyan-outlined button */
+.habit-row-time-pill.no-time {
+  background: rgba(0, 212, 255, 0.08);
+  border: 1px solid rgba(0, 212, 255, 0.5);
+  color: var(--cyan, #00d4ff);
+}
+
+.habit-row-time-pill.no-time:hover {
+  background: rgba(0, 212, 255, 0.2);
+  border-color: var(--cyan, #00d4ff);
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+/* When habit has a scheduled time: "🕒 6:00 AM" pill */
+.habit-row-time-pill.has-time {
+  background: rgba(0, 212, 255, 0.15);
+  border: 1px solid var(--cyan, #00d4ff);
+  color: var(--cyan, #00d4ff);
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.25);
+}
+
+.habit-row-time-pill.has-time:hover {
+  background: rgba(0, 212, 255, 0.26);
+  box-shadow: 0 0 16px rgba(0, 212, 255, 0.5);
+  transform: translateY(-1px);
+}
+
+.habit-row-time-pill.has-time.paused {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--muted, #6b7fa3);
+  box-shadow: none;
+}
+
+.habit-row-time-pill .pill-duration-tag {
+  background: rgba(0, 229, 160, 0.18);
+  color: var(--green, #00e5a0);
+  border: 1px solid rgba(0, 229, 160, 0.35);
+  padding: 1px 6px;
+  border-radius: 99px;
+  font-size: 0.68rem;
+  margin-left: 3px;
+  transition: all 0.2s ease;
+}
+
+.habit-row-time-pill .pill-duration-tag:hover {
+  background: rgba(0, 229, 160, 0.3);
+  box-shadow: 0 0 8px rgba(0, 229, 160, 0.4);
+}
+
+/* Card with a time set (Active/Timed Card): subtle glowing cyan border */
+.task-item.task-timed {
+  border: 1px solid rgba(0, 212, 255, 0.45) !important;
+  box-shadow: 0 0 14px rgba(0, 212, 255, 0.12), inset 0 0 20px rgba(0, 212, 255, 0.03);
+  background: rgba(0, 212, 255, 0.03);
+}
+
+.task-item.task-timed:hover {
+  border-color: rgba(0, 212, 255, 0.65) !important;
+  box-shadow: 0 0 22px rgba(0, 212, 255, 0.2), inset 0 0 20px rgba(0, 212, 255, 0.05);
+}
+
+/* Delete button visibility */
+.task-actions .del-btn {
+  color: var(--muted, #6b7fa3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+}
+
+.task-item:hover .task-actions .del-btn,
+.task-actions .del-btn:hover {
+  color: var(--red, #ff4d6d);
+  opacity: 1;
+}
+
+/* Live countdown badge next to title */
+.task-timer-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: rgba(255, 184, 0, 0.14);
+  border: 1px solid rgba(255, 184, 0, 0.4);
+  color: var(--amber, #ffb800);
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+  margin-left: 8px;
+  animation: timerPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes timerPulse {
+  0%, 100% { box-shadow: 0 0 0 rgba(255, 184, 0, 0); }
+  50% { box-shadow: 0 0 12px rgba(255, 184, 0, 0.35); }
+}

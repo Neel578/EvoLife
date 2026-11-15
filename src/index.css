@@ -313,6 +313,38 @@ body.light .progress-track { background: rgba(0,0,0,0.08); }
   padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
 }
 
+/* Analytics full-screen overlay */
+.analytics-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  background: var(--bg, #070b14);
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s var(--ease-out) both;
+  /* Leave space above the bottom nav */
+  padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+}
+@keyframes slideUp {
+  from { transform: translateY(60px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+.analytics-overlay-header {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px 0;
+  flex-shrink: 0;
+}
+.analytics-overlay-body {
+  flex: 1;
+  overflow-y: auto;
+}
+/* Inside the overlay, the .screen doesn't need to be full height */
+.analytics-overlay-body .screen {
+  min-height: unset;
+  padding-bottom: clamp(16px, 4vw, 32px);
+}
+
 /* ===== SCREEN WRAPPER ===== */
 .screen {
   min-height: 100dvh;
@@ -789,8 +821,9 @@ body.light .tab-pill.active { background: var(--bg); color: var(--text); }
 
 /* ===== MODAL ===== */
 .modal-overlay {
-  position: fixed; inset: 0; z-index: 9999;
-  background: rgba(7,11,20,0.85); backdrop-filter: blur(12px);
+  position: fixed; inset: 0; z-index: 99999;
+  background: rgba(7,11,20,0.85); backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   display: flex; align-items: center; justify-content: center;
   padding: 16px;
   animation: fadeIn 0.2s ease both;

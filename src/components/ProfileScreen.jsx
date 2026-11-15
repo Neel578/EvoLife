@@ -1,39 +1,289 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { auth, db } from '../firebase';
 import { signOut } from 'firebase/auth';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
+
+const PRESET_AVATARS = ['⚡', '🦁', '🚀', '👑', '🔥', '🌟', '🐺', '🎯'];
 
 /* ─── Edit Profile Modal ─────────────────────────────────────────────────── */
 function EditProfileModal({ initial, onSave, onCancel, saving }) {
   const [fullName, setFullName] = useState(initial.fullName || '');
   const [username, setUsername] = useState(initial.username || '');
-  const [age, setAge]           = useState(initial.age || '');
-  const [gender, setGender]     = useState(initial.gender || '');
-  const canSave = fullName.trim() && username.trim() && age && gender;
+  const [age, setAge]           = useState(initial.age || 24);
+  const [gender, setGender]     = useState(initial.gender || 'Male');
+  const [photoURL, setPhotoURL] = useState(initial.photoURL || null);
+  const [presetAvatar, setPresetAvatar] = useState(initial.presetAvatar || '⚡');
+  const fileInputRef = useRef(null);
+
+  // Username validation state
+  const [usernameStatus, setUsernameStatus] = useState('available'); // 'available' | 'checking' | 'taken' | 'invalid'
+  const [usernameMsg, setUsernameMsg]       = useState('');
+
+  useEffect(() => {
+    const clean = username.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+    const timer = setTimeout(async () => {
+      if (!clean) {
+        setUsernameStatus('invalid');
+        setUsernameMsg('Username cannot be empty');
+        return;
+      }
+
+      if (clean === initial.username?.toLowerCase()) {
+        setUsernameStatus('available');
+        setUsernameMsg('Current username');
+        return;
+      }
+
+      if (clean.length < 3) {
+        setUsernameStatus('invalid');
+        setUsernameMsg('Must be at least 3 characters');
+        return;
+      }
+
+      setUsernameStatus('checking');
+      setUsernameMsg('Checking availability…');
+
+      try {
+        const q = query(collection(db, 'users'), where('username', '==', clean));
+        const snap = await getDocs(q);
+        if (snap.empty) {
+          setUsernameStatus('available');
+          setUsernameMsg(`@${clean} is available!`);
+        } else {
+          setUsernameStatus('taken');
+          setUsernameMsg(`@${clean} is already taken`);
+        }
+      } catch (err) {
+        console.error(err);
+        setUsernameStatus('available');
+      }
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [username, initial.username]);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const maxDim = 320;
+        let width = img.width;
+        let height = img.height;
+        if (width > height) {
+          if (width > maxDim) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          }
+        } else {
+          if (height > maxDim) {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        setPhotoURL(dataUrl);
+        setPresetAvatar(null);
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const canSave = fullName.trim() && username.trim() && usernameStatus === 'available' && age && gender;
+
   return (
     <div className="modal-overlay" onClick={onCancel}>
-      <div className="modal-box" onClick={e => e.stopPropagation()}>
+      <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth: '440px', maxHeight: '90vh', overflowY: 'auto' }}>
         <div className="modal-header">
           <h2>Edit Profile</h2>
           <button className="modal-close" onClick={onCancel}><i className="ri-close-line" /></button>
         </div>
-        <div style={{ display:'flex', flexDirection:'column', gap:'12px' }}>
-          <input type="text" placeholder="Full Name" value={fullName} onChange={e => setFullName(e.target.value)} autoComplete="name" />
-          <input type="text" placeholder="Username"  value={username} onChange={e => setUsername(e.target.value)} autoComplete="username" />
-          <div style={{ display:'flex', gap:'10px' }}>
-            <input type="number" inputMode="numeric" placeholder="Age" value={age}
-              onChange={e => setAge(e.target.value)} min="1" max="120" style={{ flex:1 }} />
-            <select value={gender} onChange={e => setGender(e.target.value)} style={{ flex:1, cursor:'pointer' }}>
-              <option value="" disabled>Gender</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-            </select>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+          {/* ── Avatar Edit ────────────────────────────────────── */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              accept="image/*"
+              style={{ display: 'none' }}
+            />
+            <div
+              className="pf-avatar-ring"
+              style={{ width: 88, height: 88, cursor: 'pointer' }}
+              onClick={() => fileInputRef.current?.click()}
+              title="Click to change photo"
+            >
+              <div className="pf-avatar-inner" style={{ overflow: 'hidden' }}>
+                {photoURL ? (
+                  <img src={photoURL} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <span style={{ fontSize: '2rem' }}>{presetAvatar || '⚡'}</span>
+                )}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                type="button"
+                className="btn-ghost btn-sm"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <i className="ri-camera-line" /> Change Photo
+              </button>
+              {photoURL && (
+                <button
+                  type="button"
+                  className="btn-ghost btn-sm"
+                  style={{ color: 'var(--red)' }}
+                  onClick={() => { setPhotoURL(null); setPresetAvatar('⚡'); }}
+                >
+                  <i className="ri-delete-bin-line" /> Remove
+                </button>
+              )}
+            </div>
+
+            {/* Preset avatar emojis */}
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'center' }}>
+              {PRESET_AVATARS.map(emoji => (
+                <button
+                  key={emoji}
+                  type="button"
+                  className={`preset-avatar-btn ${presetAvatar === emoji && !photoURL ? 'selected' : ''}`}
+                  style={{ width: 34, height: 34, fontSize: '1.1rem' }}
+                  onClick={() => { setPresetAvatar(emoji); setPhotoURL(null); }}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
           </div>
+
+          {/* ── Name & Username ────────────────────────────────── */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <input
+              type="text"
+              placeholder="Full Name"
+              value={fullName}
+              onChange={e => setFullName(e.target.value)}
+              autoComplete="name"
+            />
+
+            <div>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <input
+                  type="text"
+                  placeholder="Username"
+                  value={username}
+                  onChange={e => setUsername(e.target.value)}
+                  autoComplete="username"
+                  style={{ paddingRight: '100px' }}
+                />
+                {usernameStatus === 'checking' && (
+                  <span style={{ position: 'absolute', right: 12, fontSize: '0.78rem', color: 'var(--cyan)' }}>
+                    <i className="ri-loader-4-line spin" /> Checking…
+                  </span>
+                )}
+                {usernameStatus === 'available' && (
+                  <span style={{ position: 'absolute', right: 12, fontSize: '0.78rem', color: 'var(--green)', fontWeight: 700 }}>
+                    ✓ Available
+                  </span>
+                )}
+                {usernameStatus === 'taken' && (
+                  <span style={{ position: 'absolute', right: 12, fontSize: '0.78rem', color: 'var(--red)', fontWeight: 700 }}>
+                    ✕ Taken
+                  </span>
+                )}
+              </div>
+              {usernameMsg && (
+                <div style={{
+                  fontSize: '0.75rem',
+                  marginTop: '4px',
+                  color: usernameStatus === 'available' ? 'var(--green)' : usernameStatus === 'taken' ? 'var(--red)' : 'var(--muted)'
+                }}>
+                  {usernameMsg}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ── Age Selection Slider ───────────────────────────── */}
+          <div className="age-selector-box" style={{ padding: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+              <span className="label">Age</span>
+              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, color: 'var(--cyan)', fontSize: '1.2rem' }}>
+                {age} yrs
+              </span>
+            </div>
+            <input
+              type="range"
+              min="12"
+              max="90"
+              value={age}
+              onChange={e => setAge(Number(e.target.value))}
+              className="custom-range-slider"
+              style={{ '--slider-pct': `${((age - 12) / (90 - 12)) * 100}%` }}
+            />
+          </div>
+
+          {/* ── Gender Selection ───────────────────────────────── */}
+          <div>
+            <span className="label" style={{ marginBottom: '8px', display: 'block' }}>Gender</span>
+            <div className="gender-cards-grid" style={{ gap: '8px' }}>
+              {[
+                { id: 'Male', label: 'Male', icon: 'ri-men-line', cls: 'male' },
+                { id: 'Female', label: 'Female', icon: 'ri-women-line', cls: 'female' },
+                { id: 'Other', label: 'Other', icon: 'ri-sparkles-line', cls: 'other' },
+              ].map(item => {
+                const isSelected = gender === item.id;
+                return (
+                  <div
+                    key={item.id}
+                    className={`gender-card ${item.cls} ${isSelected ? 'selected' : ''}`}
+                    style={{ padding: '12px 6px' }}
+                    onClick={() => setGender(item.id)}
+                  >
+                    {isSelected && <span className="gender-card-check">✓</span>}
+                    <div className="gender-icon-bubble" style={{ width: 34, height: 34, fontSize: '1.1rem' }}>
+                      <i className={item.icon} />
+                    </div>
+                    <span className="gender-card-label" style={{ fontSize: '0.8rem' }}>{item.label}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
         </div>
-        <div style={{ display:'flex', gap:'10px', marginTop:'20px' }}>
-          <button className="btn-ghost" style={{ flex:1 }} onClick={onCancel} disabled={saving}>Cancel</button>
-          <button className="btn-primary" style={{ flex:1 }} disabled={!canSave || saving}
-            onClick={() => onSave({ fullName:fullName.trim(), username:username.trim(), age:Number(age), gender })}>
+
+        <div style={{ display: 'flex', gap: '10px', marginTop: '24px' }}>
+          <button className="btn-ghost" style={{ flex: 1 }} onClick={onCancel} disabled={saving}>
+            Cancel
+          </button>
+          <button
+            className="btn-primary"
+            style={{ flex: 1 }}
+            disabled={!canSave || saving}
+            onClick={() => onSave({
+              fullName: fullName.trim(),
+              username: username.trim().toLowerCase(),
+              age: Number(age),
+              gender,
+              photoURL: photoURL || null,
+              presetAvatar: presetAvatar || null
+            })}
+          >
             {saving ? <i className="ri-loader-4-line spin" /> : 'Save Changes'}
           </button>
         </div>
@@ -75,6 +325,7 @@ function RingProgress({ pct=0, color='var(--cyan)', size=60, stroke=5 }) {
     </svg>
   );
 }
+
 
 /* ─── Main Screen ────────────────────────────────────────────────────────── */
 function ProfileScreen({ user, onAuthRequired }) {
@@ -184,7 +435,7 @@ function ProfileScreen({ user, onAuthRequired }) {
     { icon:'ri-at-line',       label:'Username',  value: loading ? '—' : (profile?.username ? `@${profile.username}` : '—') },
     { icon:'ri-cake-line',     label:'Age',       value: loading ? '—' : (profile?.age      || '—') },
     { icon:'ri-profile-line',  label:'Gender',    value: loading ? '—' : (profile?.gender   || '—') },
-    { icon:'ri-mail-line',     label:'Email',     value: user?.email || '—', small: true },
+    { icon:'ri-mail-line',     label:'Email',     value: user?.email || profile?.email || '—', small: true },
   ];
 
   return (
@@ -204,8 +455,18 @@ function ProfileScreen({ user, onAuthRequired }) {
           {/* Avatar */}
           <div className="pf-avatar-wrap">
             <div className="pf-avatar-ring">
-              <div className="pf-avatar-inner">
-                {initials || <i className="ri-user-smile-line" style={{ fontSize:'2rem' }} />}
+              <div className="pf-avatar-inner" style={{ overflow: 'hidden' }}>
+                {profile?.photoURL || user?.photoURL ? (
+                  <img
+                    src={profile?.photoURL || user?.photoURL}
+                    alt="Avatar"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : profile?.presetAvatar ? (
+                  <span style={{ fontSize: '2.4rem' }}>{profile.presetAvatar}</span>
+                ) : (
+                  initials || <i className="ri-user-smile-line" style={{ fontSize:'2rem' }} />
+                )}
               </div>
             </div>
             <button className="pf-edit-fab" onClick={() => setShowEdit(true)} disabled={loading} title="Edit profile">

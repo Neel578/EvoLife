@@ -7,7 +7,7 @@ import {
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Filler);
 
-function WelcomeScreen({ user, setActiveTab }) {
+function WelcomeScreen({ openAnalytics }) {
   /* ── Calendar & chart data ──────────────────────────────────── */
   const [taskHistory] = useState(() => {
     const saved = localStorage.getItem('evoLifeTaskHistory');
@@ -114,10 +114,10 @@ function WelcomeScreen({ user, setActiveTab }) {
 
         {/* ── This Week's Tasks mini chart ─────────────────────── */}
         <div className="card mini-chart-card animate-fadeUp"
-          onClick={() => setActiveTab && setActiveTab(0)}>
+          onClick={() => openAnalytics && openAnalytics()}>
           <div className="mini-chart-header">
             <span>This Week's Tasks</span>
-            <i className="ri-bar-chart-2-line" />
+            <i className="ri-external-link-line" />
           </div>
           <div style={{ height: '130px' }}>
             <Line data={chartData} options={chartOpts} />
